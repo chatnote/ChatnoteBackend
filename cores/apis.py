@@ -19,6 +19,12 @@ api = NinjaAPI(
     docs_url="/docs" if settings.ENV != "prod" else None,
 )
 
+test_api = NinjaAPI(
+    version="1.0.0",
+    parser=ORJSONParser(),
+    auth=None
+)
+
 
 @api.exception_handler(CustomException)
 def custom_exception(request, exc):

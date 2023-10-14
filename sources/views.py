@@ -3,7 +3,7 @@ from typing import List
 import requests
 from django.conf import settings
 
-from cores.apis import api
+from cores.apis import api, test_api
 from cores.enums import ApiTagEnum
 from cores.exception import CustomException
 from sources.services import NotionDocumentService, NotionSync, NotionValidator, PAGE_LIMIT
@@ -16,8 +16,8 @@ import base64
 from sources.services import NotionSyncStatusService
 
 
-@api.get(
-    path="test/notion/callback/",
+@test_api.get(
+    path="notion/callback/",
     auth=None,
     description=f"""NOTION AUTH_URL: {settings.NOTION_AUTH_URL}""",
     tags=[ApiTagEnum.test]
