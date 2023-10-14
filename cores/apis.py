@@ -20,9 +20,10 @@ api = NinjaAPI(
 )
 
 test_api = NinjaAPI(
-    version="1.0.0",
+    version='1.0.0.test',
     parser=ORJSONParser(),
-    auth=None
+    auth=None,
+    docs_url="/docs" if settings.ENV != "prod" else None,
 )
 
 
