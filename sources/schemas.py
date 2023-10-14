@@ -16,7 +16,6 @@ class SyncStatusSchema(Schema):
     total_page_count: int | None
     current_page_count: int | None
     is_running: bool
-    update_datetime: datetime
 
     @classmethod
     def from_instance(cls, data_sync_status):
@@ -24,8 +23,7 @@ class SyncStatusSchema(Schema):
             source=data_sync_status.source,
             total_page_count=data_sync_status.total_page_count,
             current_page_count=data_sync_status.cur_page_count,
-            is_running=data_sync_status.is_running,
-            update_datetime=data_sync_status.modified + timedelta(hours=9)
+            is_running=data_sync_status.is_running
         )
 
     @classmethod
