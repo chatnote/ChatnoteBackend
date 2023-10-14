@@ -36,14 +36,14 @@ def delete_user(request):
     user.save()
 
 
-@api.post(
+@api.get(
     path="login/google/callback/",
     auth=None,
     response={200: SignUpResponse},
     tags=[ApiTagEnum.user]
 )
-def google_callback(request, params: GoogleSignupParams):
-    access_token = GoogleLoginService.get_token(params.code)
+def google_callback(request, ccode: str):
+    access_token = GoogleLoginService.get_token(code)
     email = GoogleLoginService.get_email(access_token)
 
     try:
@@ -55,14 +55,14 @@ def google_callback(request, params: GoogleSignupParams):
     return SignUpResponse(token=token, user=user)
 
 
-@api.post(
+@api.get(
     path="login/apple/callback/",
     auth=None,
     response={200: SignUpResponse},
     tags=[ApiTagEnum.user]
 )
-def signup_apple(request, params: AppleSignupParams):
-    access_token = AppleLoginService.get_token(params.code)
+def signup_apple(request, code: str):
+    access_token = AppleLoginService.get_token(code)
     email = AppleLoginService.get_email(access_token)
 
     try:
