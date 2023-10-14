@@ -4,7 +4,7 @@ from django.shortcuts import render
 
 from chats.schemas import ChatQueryParams, ChatResponseSchema
 from chats.services import SearchClient, ChatHistoryService
-from cores.apis import api
+from cores.apis import api, test_api
 from cores.enums import ApiTagEnum
 
 
@@ -23,7 +23,7 @@ def chat(request, params: ChatQueryParams):
     return chat_response_schema
 
 
-@api.post(
+@test_api.post(
     path="chat/history/",
     response={200: List[ChatResponseSchema]},
     tags=[ApiTagEnum.chat],

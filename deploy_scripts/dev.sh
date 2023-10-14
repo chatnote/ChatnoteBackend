@@ -38,7 +38,6 @@ echo "==========ecr push 완료=========="
 # register ecs task definition
 register_task_definition_output=$(docker run --rm -it -v ~/.aws:/root/.aws -v "$(pwd)":/aws amazon/aws-cli ecs register-task-definition --cli-input-json "$task_definition_json")
 echo "==========ecs task definition register 완료=========="
-echo "$register_task_definition_output"
 
 ## update service
 #task_definition_arn=$(echo "$register_task_definition_output" | jq -r '.taskDefinition.taskDefinitionArn')
