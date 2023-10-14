@@ -3,15 +3,19 @@ from typing import List
 from ninja import Schema
 
 from sources.enums import NotionValidErrorEnum
-from sources.schemas import NotionPageSchema
+
+
+class NotionValidPageSchema(Schema):
+    title: str
+    icon: str
 
 
 class NotionValidPayloadSchema(Schema):
     page_limit_counts: int
     page_counts: int
-    notion_page_schemas: List[NotionPageSchema]
+    notion_page_schemas: List[NotionValidPageSchema]
 
 
-class NotionValidErrorSchema(Schema):
-    error_code: NotionValidErrorEnum
+class NotionValidErrorDTO(Schema):
     payload: NotionValidPayloadSchema
+    error_code: NotionValidErrorEnum

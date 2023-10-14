@@ -379,6 +379,6 @@ class NotionLoader:
             ))
         return results
 
-    def get_workspace_pages_and_counts(self) -> List[NotionPageSchema]:
+    def get_workspace_pages(self) -> List[NotionPageSchema]:
         notion_page_schemas = self.get_pages_and_counts()
         return [item for item in notion_page_schemas if item.is_workspace]

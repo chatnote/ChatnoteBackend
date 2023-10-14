@@ -8,7 +8,7 @@ from cores.enums import ApiTagEnum
 from cores.exception import CustomException
 from sources.services import NotionDocumentService, NotionSync, NotionValidator, PAGE_LIMIT
 from sources.enums import NotionValidErrorEnum
-from sources.exceptions import NotionValidErrorSchema, NotionValidPayloadSchema
+from sources.exceptions import NotionValidErrorDTO, NotionValidPayloadSchema, NotionValidPageSchema
 from sources.loaders.notion import NotionLoader
 from sources.schemas import NotionCallbackParams, SyncStatusSchema, NotionPageSchema, NotionPageDTO
 import base64
@@ -54,7 +54,7 @@ def save_notion_access_token(request, params: NotionCallbackParams):
 
 @api.post(
     path="source/notion/sync/",
-    response={200: None, 400: NotionValidErrorSchema},
+    response={200: None, 400: NotionValidErrorDTO},
     tags=[ApiTagEnum.source]
 )
 def notion_sync(request):
@@ -69,13 +69,18 @@ def notion_sync(request):
     if not is_valid:
         NotionSyncStatusService(user).to_stop()
 
+        notion_page_schemas = notion_loader.get_workspace_pages()
+
         raise CustomException(
-            **NotionValidErrorSchema(
+            **NotionValidErrorDTO(
                 error_code=NotionValidErrorEnum.notion_page_limit,
                 payload=NotionValidPayloadSchema(
                     page_limit_counts=PAGE_LIMIT,
                     page_counts=len(pages),
-                    notion_page_schemas=notion_loader.get_workspace_pages_and_counts()
+                    notion_page_schemas=[NotionValidPageSchema(
+                        title=notion_page.title,
+                        icon=notion_page.icon
+                    ) for notion_page in notion_page_schemas]
                 )
             ).dict()
         )
