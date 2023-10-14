@@ -10,7 +10,8 @@ from sources.services import NotionDocumentService, NotionSync, NotionValidator,
 from sources.enums import NotionValidErrorEnum
 from sources.exceptions import NotionValidErrorDTO, NotionValidPayloadSchema, NotionValidPageSchema
 from sources.loaders.notion import NotionLoader
-from sources.schemas import NotionCallbackParams, SyncStatusSchema, NotionPageSchema, NotionPageDTO
+from sources.schemas import NotionCallbackParams, SyncStatusSchema, NotionPageSchema, NotionPageDTO, \
+    NotionPagePayloadDTO
 import base64
 
 from sources.services import NotionSyncStatusService
@@ -107,13 +108,23 @@ def notion_delete(request):
 
 @api.get(
     path="source/notion/pages/",
-    response={200: List[NotionPageDTO]},
+    response={200: NotionPageDTO},
     tags=[ApiTagEnum.source]
 )
 def get_pages(request):
     user = request.user
-    notion_page_qs = user.notionpage_set.filter(is_workspace=True).order_by("-modified").all()
-    return NotionPageDTO.from_notion_page_qs(notion_page_qs)
+    page_counts = user.notionpage_set.count()
+    workspace_notion_page_qs = user.notionpage_set.filter(is_workspace=True).order_by("-modified").all()
+
+    return NotionPageDTO(
+        page_limit_counts=PAGE_LIMIT,
+        page_counts=page_counts,
+        notion_page_schemas=[NotionPagePayloadDTO(
+            title=item.title,
+            icon=item.icon
+        ) for item in workspace_notion_page_qs],
+        update_datetime=workspace_notion_page_qs.first().modified if workspace_notion_page_qs else None
+    )
 
 
 @api.get(

@@ -60,16 +60,13 @@ class NotionPageSchema(Schema):
     update_datetime: datetime | None
 
 
-class NotionPageDTO(Schema):
+class NotionPagePayloadDTO(Schema):
     title: str
     icon: str
+
+
+class NotionPageDTO(Schema):
+    page_limit_counts: int
+    page_counts: int
+    notion_page_schemas: List[NotionPagePayloadDTO]
     update_datetime: datetime | None
-
-    @classmethod
-    def from_notion_page_qs(cls, notion_page_qs):
-        return [cls(
-            title=item.title,
-            icon=item.icon,
-            update_datetime=item.modified + timedelta(hours=9)
-        ) for item in notion_page_qs]
-
