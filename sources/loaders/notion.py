@@ -183,9 +183,6 @@ class NotionLoader:
                 if notion_document:
                     notion_document_schemas.append(notion_document)
 
-            if (i+1) == 1 or (i+1) % 10 == 0:
-                from sources.services import NotionSyncStatusService
-                NotionSyncStatusService(self.user).save_current_page_count(i+1)
         return notion_document_schemas
 
     def process_nested_children(self, children_blocks, raw_content, block_type=None):

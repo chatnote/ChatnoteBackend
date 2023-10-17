@@ -106,6 +106,40 @@ class NotionPageService:
         self.user = user
 
     @transaction.atomic
+    def create_pages(self, notion_page_schemas):
+        notion_page_for_create = []
+
+        for item in notion_page_schemas:
+            notion_page_for_create.append(NotionPage(
+                user=self.user,
+                url=item.url,
+                page_id=item.page_id,
+                title=item.title,
+                icon=item.icon,
+                is_workspace=item.is_workspace
+            ))
+
+        NotionPage.objects.bulk_create(notion_page_for_create)
+
+    @transaction.atomic
+    def update_pages(self, notion_page_schemas):
+        document_url_2_info_for_update = {}
+        for document in notion_page_schemas:
+            document_url_2_info_for_update[document.url] = document
+
+        notion_page_for_update_qs = self.user.notionpage_set.filter(url=document_url_2_info_for_update.keys()).all()
+        for notion_page in notion_page_for_update_qs:
+            notion_page.title = document_url_2_info_for_update[notion_page.url].title
+            notion_page.icon = document_url_2_info_for_update[notion_page.url].icon
+            notion_page.is_workspace = document_url_2_info_for_update[notion_page.url].is_workspace
+
+        NotionPage.objects.bulk_update(notion_page_for_update_qs, ['title', 'icon', 'is_workspace'])
+
+    @transaction.atomic
+    def delete_pages(self, document_urls):
+        self.user.notionpage_set.filter(url__in=document_urls).all().delete()
+
+    @transaction.atomic
     def create_or_update_pages(self):
         self.user.notionpage_set.all().delete()
 
@@ -136,19 +170,22 @@ class NotionSync:
 
     def overall_process(self):
         # notion text update
-        self.create_documents()
-        self.update_documents()
-        self.delete_documents()
-        self.chunked_client.refresh_index()
+        documents_for_create = self.create_documents()
+        documents_for_update = self.update_documents()
+        document_urls_for_delete = self.delete_documents()
 
-        # notion page update
-        NotionPageService(self.user).create_or_update_pages()
+        # NotionPageService(self.user).create_pages(documents_for_create)
+        # NotionPageService(self.user).update_pages(documents_for_update)
+        # NotionPageService(self.user).delete_pages(document_urls_for_delete)
 
-    def create_documents(self):
+        # self.chunked_client.refresh_index()
+
+    def create_documents(self) -> List[str]:
         documents_for_create = [document for document in self.notion_document_schemas if document.url not in self.saved_document_urls]
         if documents_for_create:
             self.notion_document_service.create_documents(documents_for_create)
         print(f"documents_for_create: {len(documents_for_create)}개")
+        return documents_for_create
 
     def update_documents(self):
         existed_document_urls = list(set(self.saved_document_urls) & set(self.new_document_urls))
@@ -164,12 +201,14 @@ class NotionSync:
             self.notion_document_service.update_documents(documents_for_update)
         print(f"documents for exists: {len(existed_document_urls)}개")
         print(f"documents_for_update: {len(documents_for_update)}개")
+        return documents_for_update
 
     def delete_documents(self):
         document_urls = list(set(self.saved_document_urls) - set(self.new_document_urls))
         if document_urls:
             self.notion_document_service.delete_documents(document_urls)
         print(f"documents_for_delete: {len(document_urls)}개")
+        return document_urls
 
     @cached_property
     def saved_document_urls(self):
@@ -195,19 +234,16 @@ class NotionSyncStatusService:
             )
         return sync_status
 
+    @transaction.atomic
     def save_current_page_count(self, count: int):
         sync_status = self.get_or_create_sync_status()
-        sync_status.cur_page_count = count
+        sync_status.cur_page_count = sync_status.cur_page_count + count
         sync_status.save()
 
-    def save_total_page_count(self, count: int):
+    def to_running(self, count: int):
         sync_status = self.get_or_create_sync_status()
         sync_status.total_page_count = count
-        sync_status.save()
-
-    def to_running(self):
-        sync_status = self.get_or_create_sync_status()
-        sync_status.is_running = True
+        sync_status.cur_page_count = 0
         sync_status.save()
 
     def to_stop(self):
@@ -215,5 +251,4 @@ class NotionSyncStatusService:
         sync_status.last_sync_datetime = datetime.now()
         sync_status.total_page_count = None
         sync_status.cur_page_count = None
-        sync_status.is_running = False
         sync_status.save()

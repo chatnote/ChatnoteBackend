@@ -6,8 +6,8 @@ from django.conf import settings
 from cores.apis import api, test_api
 from cores.enums import ApiTagEnum
 from cores.exception import CustomException
-from sources.services import NotionDocumentService, NotionSync, NotionValidator, PAGE_LIMIT
-from sources.enums import NotionValidErrorEnum
+from sources.services import NotionDocumentService, NotionSync, NotionValidator, PAGE_LIMIT, NotionPageService
+from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO, NotionValidPayloadSchema, NotionValidPageSchema
 from sources.loaders.notion import NotionLoader
 from sources.schemas import NotionCallbackParams, SyncStatusSchema, NotionPageSchema, NotionPageDTO, \
@@ -15,6 +15,7 @@ from sources.schemas import NotionCallbackParams, SyncStatusSchema, NotionPageSc
 import base64
 
 from sources.services import NotionSyncStatusService
+from sources.tasks import sync_notion_task
 
 
 @test_api.get(
@@ -58,18 +59,15 @@ def save_notion_access_token(request, params: NotionCallbackParams):
     response={200: None, 400: NotionValidErrorDTO},
     tags=[ApiTagEnum.source]
 )
-def notion_sync(request):
+def sync_notion(request):
     user = request.user
 
-    NotionSyncStatusService(user).to_running()
     notion_loader = NotionLoader(user)
     pages = notion_loader.get_all_page
 
     # page count save
     is_valid = NotionValidator.validate(user, pages)
     if not is_valid:
-        NotionSyncStatusService(user).to_stop()
-
         notion_page_schemas = notion_loader.get_workspace_pages()
 
         raise CustomException(
@@ -86,15 +84,17 @@ def notion_sync(request):
             ).dict()
         )
 
-    # background sync
-    try:
-        NotionSyncStatusService(user).save_total_page_count(len(pages))
-        notion_document_schemas = NotionLoader(user).overall_process(pages)
-        NotionSync(user, notion_document_schemas).overall_process()
-        NotionSyncStatusService(user).to_stop()
-    except Exception as e:
-        print(e)
-        NotionSyncStatusService(user).to_stop()
+    total_split_pages = []
+    for i in range(0, len(pages), 50):
+        split_pages = pages[i:i + 50]
+        total_split_pages.append(split_pages)
+
+    if total_split_pages:
+        NotionSyncStatusService(user).to_running(len(pages))
+
+    for split_pages in total_split_pages:
+        if split_pages:
+            sync_notion_task(user.id, split_pages)
 
 
 @api.post(
@@ -134,5 +134,9 @@ def get_pages(request):
 )
 def source_status(request):
     user = request.user
+
     data_sync_status_qs = user.datasyncstatus_set.all()
+    if data_sync_status_qs.get(source=DataSourceEnum.notion).is_done:
+        NotionPageService(user).create_or_update_pages()
+        NotionSyncStatusService(user).to_stop()
     return SyncStatusSchema.from_instances(data_sync_status_qs)
