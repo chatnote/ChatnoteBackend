@@ -1,0 +1,31 @@
+{
+  "dev": {
+    "aws_region": "ap-northeast-2",
+    "django_settings": "chatnote.settings.dev",
+    "profile_name": "default",
+    "project_name": "chatnote",
+    "runtime": "python3.10",
+    "s3_bucket": "zappa-cached-xxxxxx-dev",
+    "memory_size": 2048,
+    "endpoint_configuration": [
+      "REGIONAL"
+    ],
+    "cloudwatch_log_level": "INFO",
+    "cloudwatch_data_trace": true,
+    "cloudwatch_metrics_enabled": true,
+    "vpc_config": {
+      "SubnetIds": [
+        "subnet-01b0cf347a2c40f23",
+        "subnet-0b46751713aae12e8"
+      ],
+      "SecurityGroupIds": [
+        "sg-00f6d791786d9f0f6"
+      ]
+    },
+    "keep_warm": true,
+    "keep_warm_expression": "rate(4 minutes)",
+    "manage_roles": false,
+    "role_name": "chatnote-dev-ZappaLambdaExecutionRole",
+    "role_arn": "arn:aws:iam::974539925060:role/chatnote-dev-ZappaLambdaExecutionRole"
+  }
+}

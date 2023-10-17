@@ -3,7 +3,7 @@ TAG=$(date +"%Y-%m-%d-%H-%M-%S")
 ECR_PATH=974539925060.dkr.ecr.ap-northeast-2.amazonaws.com/$IMAGE_NAME
 task_container_name="chatnote"
 ecs_execution_role_arn="arn:aws:iam::974539925060:role/ecsTaskExecutionRole"
-task_definition_json=$(python3 deploy_scripts/task_definitions.py "$ECR_PATH:$TAG" "$task_container_name" "$ecs_execution_role_arn")
+task_definition_json=$(python3 deploy_scripts_ecs/task_definitions.py "$ECR_PATH:$TAG" "$task_container_name" "$ecs_execution_role_arn")
 ecs_cluster="chatnote_dev"
 ecs_service="chatnoe"
 
@@ -26,7 +26,7 @@ else
 fi
 
 # docker build
-docker build -t $IMAGE_NAME:$TAG . -f dockerfiles/dev.Dockerfile
+docker build -t $IMAGE_NAME:$TAG . -f dockerfiles/dev.ecs.Dockerfile
 docker tag $IMAGE_NAME:$TAG $ECR_PATH:$TAG
 echo "==========docker build 완료=========="
 
@@ -38,6 +38,7 @@ echo "==========ecr push 완료=========="
 # register ecs task definition
 register_task_definition_output=$(docker run --rm -it -v ~/.aws:/root/.aws -v "$(pwd)":/aws amazon/aws-cli ecs register-task-definition --cli-input-json "$task_definition_json")
 echo "==========ecs task definition register 완료=========="
+echo "$register_task_definition_output"
 
 ## update service
 #task_definition_arn=$(echo "$register_task_definition_output" | jq -r '.taskDefinition.taskDefinitionArn')

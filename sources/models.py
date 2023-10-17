@@ -13,7 +13,6 @@ from sources.enums import DataSourceEnum, SyncStatusEnum
 class DataSyncStatus(TimeStampedModel):
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
     source = models.CharField(null=True, blank=True, choices=DataSourceEnum.choices())
-    is_running = models.BooleanField(default=False)
     last_sync_datetime = models.DateTimeField(null=True, blank=True, default=None)
     cur_page_count = models.IntegerField(default=None, null=True, blank=True)
     total_page_count = models.IntegerField(default=None, null=True, blank=True)
@@ -24,18 +23,14 @@ class DataSyncStatus(TimeStampedModel):
         ]
 
     @property
-    def status(self):
-        current_datetime = datetime.now()
+    def is_running(self):
+        return False if self.total_page_count is None or self.cur_page_count is None else True
 
-        if self.is_running:
-            return SyncStatusEnum.running
-        else:
-            if current_datetime is None:
-                return SyncStatusEnum.allow
-            elif current_datetime.timestamp() - self.last_sync_datetime.timestamp() < 3600 * 24:
-                return SyncStatusEnum.disallow
-            else:
-                return SyncStatusEnum.allow
+    @property
+    def is_done(self):
+        if self.total_page_count is None or self.cur_page_count is None:
+            return False
+        return True if self.total_page_count == self.cur_page_count else False
 
 
 class OriginalDocument(TimeStampedModel, SoftDeleteModel):
