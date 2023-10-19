@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import List
 
 import requests
@@ -123,7 +124,7 @@ def get_pages(request):
             title=item.title,
             icon=item.icon
         ) for item in workspace_notion_page_qs],
-        update_datetime=workspace_notion_page_qs.first().modified if workspace_notion_page_qs else None
+        update_datetime=workspace_notion_page_qs.first().modified + timedelta(hours=9) if workspace_notion_page_qs else None
     )
 
 

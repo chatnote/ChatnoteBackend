@@ -2,17 +2,20 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 
+from chats.enums import ChatMessageEnum
+
 
 # Create your models here.
 
 
-class ChatHistory(TimeStampedModel):
+class ChatSession(TimeStampedModel):
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
-    query = models.TextField(null=True, blank=True, default=None)
-    response = models.TextField(null=True, blank=True, default=None)
+
+
+class ChatHistory(TimeStampedModel):
+    session = models.ForeignKey("chats.ChatSession", null=True, blank=True, default=None, on_delete=models.CASCADE)
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
+    message_type = models.CharField(max_length=20, null=True, blank=True, default=None, choices=ChatMessageEnum.choices())
+    content = models.TextField(null=True, blank=True, default=None)
     recommend_queries = ArrayField(models.CharField(max_length=300), blank=True, null=True)
-
-
-class ChatHistoryReference(TimeStampedModel):
-    chat_history = models.ForeignKey("chats.ChatHistory", on_delete=models.CASCADE)
-    original_document = models.ForeignKey("sources.OriginalDocument", on_delete=models.CASCADE)
+    original_document_ids = ArrayField(models.CharField(max_length=300), blank=True, null=True)

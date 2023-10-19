@@ -24,7 +24,6 @@ PAGE_LIMIT = 200
 class NotionSplitter:
     @staticmethod
     def split_by_token(notion_chunked_schemas: [OriginalDocumentSchema]) -> List[Document]:
-
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=500, chunk_overlap=0)
 
         documents = [Document(

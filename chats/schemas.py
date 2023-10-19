@@ -9,15 +9,22 @@ class ChatQueryParams(Schema):
     query: str
 
 
+class SearchResponseSchema(Schema):
+    title: str
+    original_text: str
+    chunked_text: str
+    url: str | None
+    source: DataSourceEnum
+
+
 class ChatReferenceSchema(Schema):
-    id: int
     title: str
     url: str
     source: DataSourceEnum
 
 
-class ChatResponseSchema(Schema):
+class ChatResponseDTO(Schema):
     query: str
     response: str
-    recommend_queries: List[str]
-    references: List[ChatReferenceSchema]
+    recommend_queries: List[str] | None
+    references: List[ChatReferenceSchema] | None
