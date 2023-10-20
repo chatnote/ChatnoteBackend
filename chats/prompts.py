@@ -1,8 +1,7 @@
 SUGGESTED_QUESTIONS_AFTER_ANSWER_INSTRUCTION_PROMPT = """Please help me predict the three most likely questions in instructional tone that human would ask, and keeping each question under 100 characters.
-"MAKE SURE your output is the SAME language as the input question!
-
-format instruction: {format_instructions}
-question: {query}
+input question: {query}
+MAKE SURE your output is the SAME language as the input question!
+{format_instructions}
 """
 
 CONDENSED_QUERY_PROMPT_WITH_HISTORY = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
@@ -17,7 +16,7 @@ CONDENSED_QUERY_PROMPT = """Given the following conversation and a follow up que
 Follow Up Input: {query}
 Standalone Question:"""
 
-CHAT_GENERATE_SYSTEM_PROMPT = """You are an personal assistant and problem-solver, tasked with answering any question.
+CHAT_GENERATE_SYSTEM_PROMPT = """You are an personal ai assistant only for me, tasked with answering any question.
 
 Generate a comprehensive and informative answer of 80 words or less for the given question based solely on the provided search results (URL and content). You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text. If different results refer to different entities within the same name, write separate answers for each entity.
 

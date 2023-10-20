@@ -24,7 +24,7 @@ def test_splitter():
         )
     ]
 
-    response = NotionSplitter.split_by_token(original_contexts)
+    response = NotionSplitter.split(original_contexts)
     print(response)
 
 

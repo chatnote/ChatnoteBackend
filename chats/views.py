@@ -1,7 +1,3 @@
-from typing import List
-
-from django.shortcuts import render
-
 from chats.schemas import ChatQueryParams, ChatReferenceSchema, ChatResponseDTO
 from chats.services import RetrievalService, ChatHistoryService, ChatService
 from cores.apis import api, test_api

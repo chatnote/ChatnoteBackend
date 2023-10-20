@@ -3,7 +3,7 @@ import time
 from langchain.callbacks import get_openai_callback
 
 
-def execute_time(func):
+def print_execution_time(func):
     def wrapper(*args, **kwargs):
         s = time.perf_counter()
         res = func(*args, **kwargs)

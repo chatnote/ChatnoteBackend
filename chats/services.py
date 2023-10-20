@@ -2,32 +2,42 @@ import os
 from typing import List, Union
 
 import openai
+import tiktoken
 from django.db.models import When, Case, F
 from langchain.callbacks import get_openai_callback
 from langchain.chat_models import ChatOpenAI
 from langchain.llms import OpenAI
 from langchain.output_parsers import PydanticOutputParser, CommaSeparatedListOutputParser
 from langchain.prompts import PromptTemplate, ChatPromptTemplate, SystemMessagePromptTemplate
-from langchain.schema import AIMessage, StrOutputParser, HumanMessage
+from langchain.schema import AIMessage, StrOutputParser, HumanMessage, SystemMessage
 
 from chats.enums import ChatMessageEnum
 from chats.models import ChatHistory, ChatSession
 from chats.prompts import SUGGESTED_QUESTIONS_AFTER_ANSWER_INSTRUCTION_PROMPT, CONDENSED_QUERY_PROMPT, CHAT_GENERATE_SYSTEM_PROMPT
 from chats.schemas import SearchResponseSchema
 from cores.elastics.clients import OriginalContextClient, ChunkedContextClient
+from cores.exception import CustomException
 from cores.llms.openais import ChatCompletion
-from cores.utils import print_token_summary
+from cores.utils import print_token_summary, print_execution_time
 from sources.enums import DataSourceEnum
 
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
+def get_num_tokens_from_text(text: str, encoding_name: str = "cl100k_base") -> int:
+    """Returns the number of tokens in a text string."""
+    encoding = tiktoken.get_encoding(encoding_name)
+    num_tokens = len(encoding.encode(text))
+    return num_tokens
+
+
 class ChatService:
     def __init__(self, user):
-        self.model_gpt35_turbo = ChatOpenAI()
-        self.model_gpt35_turbo_16k = ChatOpenAI(model_name="gpt-3.5-turbo-16k")
+        self.model_gpt35_turbo = ChatOpenAI(temperature=0.1)
+        self.model_gpt35_turbo_16k = ChatOpenAI(model_name="gpt-3.5-turbo-16k", temperature=0.1)
 
+    @print_execution_time
     @print_token_summary
     def get_condensed_query(self, query):
         prompt = ChatPromptTemplate.from_messages([
@@ -45,25 +55,36 @@ class ChatService:
         result = f"<context>\n{result}</context>"
         return result
 
-    def validate_token_limit(self, messages):
-        token_count = 0
+    @staticmethod
+    def is_valid_token_limit(messages):
+        total_content = ""
         for message in messages:
-            message.content
+            total_content += message.content
 
+        total_tokens = get_num_tokens_from_text(total_content)
+        print(f"total num tokens: {total_tokens}")
+        if total_tokens > 4000:
+            # raise CustomException(error_code="invalid_token_num_limit")
+            return False
+        else:
+            return True
+
+    @print_execution_time
     @print_token_summary
     def generate_response(self, query, search_response_schemas, chat_messages) -> str:
-        chat_messages.insert(0, SystemMessagePromptTemplate.from_template(CHAT_GENERATE_SYSTEM_PROMPT))
-        chat_messages.append(
-            HumanMessage(content=query)
-        )
-        chat_prompt = ChatPromptTemplate.from_messages(messages=chat_messages)
-        runnable = chat_prompt | self.model_gpt35_turbo | StrOutputParser()
-
         context = self._get_context_from_search(search_response_schemas)
+        chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_SYSTEM_PROMPT.format(context=context)))
+        chat_messages.append(HumanMessage(content=query))
 
-        # print(chat_prompt.format_messages(context=context))
-        return runnable.invoke({"context": context})
+        is_valid = self.is_valid_token_limit(chat_messages)
+        if is_valid:
+            runnable = self.model_gpt35_turbo | StrOutputParser()
+            return runnable.invoke(chat_messages)
+        else:
+            runnable = self.model_gpt35_turbo_16k | StrOutputParser()
+            return runnable.invoke(chat_messages)
 
+    @print_execution_time
     def generate_recommend_queries(self, query: str) -> List[str]:
         output_parser = CommaSeparatedListOutputParser()
         format_instructions = output_parser.get_format_instructions()

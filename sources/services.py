@@ -22,9 +22,22 @@ PAGE_LIMIT = 200
 
 
 class NotionSplitter:
-    @staticmethod
-    def split_by_token(notion_chunked_schemas: [OriginalDocumentSchema]) -> List[Document]:
-        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=500, chunk_overlap=0)
+    @classmethod
+    def splitter_by_len(cls):
+        return RecursiveCharacterTextSplitter(
+            chunk_size=300,
+            chunk_overlap=0,
+            length_function=len,
+        )
+
+    @classmethod
+    def splitter_by_token(cls):
+        # 한글과 영어에 포함된 문장 개수가 차이남. 영어 임베딩 성능이 떨어짐.
+        return RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=500, chunk_overlap=0)
+
+    @classmethod
+    def split(cls, notion_chunked_schemas: [OriginalDocumentSchema]) -> List[Document]:
+        text_splitter = cls.splitter_by_len()
 
         documents = [Document(
             page_content=document.text,
@@ -89,7 +102,7 @@ class NotionDocumentService:
         self.chunked_client.delete_documents(self.user)
 
     def create_chunked_documents(self, notion_document_schemas: List[OriginalDocumentSchema]):
-        chunked_documents = NotionSplitter.split_by_token(notion_document_schemas)
+        chunked_documents = NotionSplitter.split(notion_document_schemas)
 
         self.chunked_client.create_documents(chunked_documents)
 
