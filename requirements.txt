@@ -53,8 +53,11 @@ dataclasses-json==0.6.1
 django==4.2.3
     # via
     #   -r requirements.in
+    #   django-cors-headers
     #   django-extensions
     #   django-ninja
+django-cors-headers==4.3.0
+    # via -r requirements.in
 django-extensions==3.2.3
     # via -r requirements.in
 django-ninja==0.22.2
