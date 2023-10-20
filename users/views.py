@@ -42,7 +42,7 @@ def delete_user(request):
     response={200: SignUpResponse},
     tags=[ApiTagEnum.user]
 )
-def google_callback(request, ccode: str):
+def google_callback(request, code: str):
     access_token = GoogleLoginService.get_token(code)
     email = GoogleLoginService.get_email(access_token)
 
