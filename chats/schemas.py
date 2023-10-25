@@ -6,11 +6,13 @@ from sources.enums import DataSourceEnum
 
 
 class ChatQueryParams(Schema):
+    session_id: int | None
     query: str
 
 
 class SearchResponseSchema(Schema):
     title: str
+    original_document_id: int
     original_text: str
     chunked_text: str
     url: str | None
@@ -24,6 +26,7 @@ class ChatReferenceSchema(Schema):
 
 
 class ChatResponseDTO(Schema):
+    session_id: int
     query: str
     response: str
     recommend_queries: List[str] | None

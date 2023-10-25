@@ -33,7 +33,7 @@ def get_num_tokens_from_text(text: str, encoding_name: str = "cl100k_base") -> i
 
 
 class ChatService:
-    def __init__(self, user):
+    def __init__(self):
         self.model_gpt35_turbo = ChatOpenAI(temperature=0.1)
         self.model_gpt35_turbo_16k = ChatOpenAI(model_name="gpt-3.5-turbo-16k", temperature=0.1)
 
@@ -129,6 +129,7 @@ class RetrievalService:
                 if item.source == DataSourceEnum.notion:
                     search_response_schemas.append(SearchResponseSchema(
                         title=item.title,
+                        original_document_id=item.id,
                         original_text=item.text,
                         chunked_text=chunked_texts[i],
                         url=item.url,
@@ -136,18 +137,13 @@ class RetrievalService:
                     ))
         return search_response_schemas
 
-    def _get_session(self, session_id: int or None):
-        if session_id:
-            session = self.user.chatsession_set.get(id=session_id)
-        else:
-            session = None
-            # session = ChatSession.objects.create(user=self.user)
+    def create_session(self):
+        session = ChatSession.objects.create(user=self.user)
         return session
 
-    def get_chat_messages(self, session_id: int or None) -> List[Union[HumanMessage, AIMessage]]:
+    def get_chat_messages(self, session_id) -> List[Union[HumanMessage, AIMessage]]:
         messages = []
-        session = self._get_session(session_id)
-        chat_history_qs = self.user.chathistory_set.filter(session=session).order_by("created")
+        chat_history_qs = self.user.chathistory_set.filter(session_id=session_id).order_by("created")
 
         for chat_history in chat_history_qs:
             if chat_history.message_type == ChatMessageEnum.human:
@@ -164,26 +160,16 @@ class ChatHistoryService:
     def __init__(self, user):
         self.user = user
 
-    def _get_session(self, session_id: int or None):
-        if session_id:
-            session = self.user.chatsession_set.get(id=session_id)
-        else:
-            session = None
-            # session = ChatSession.objects.create(user=self.user)
-        return session
-
     def get_history(self, session_id: int or None):
         pass
 
     def add_history(
             self,
-            content: str, message_type: ChatMessageEnum,
-            recommend_queries: list = None, original_document_ids: list = None, session_id = None
+            session_id: int, content: str, message_type: ChatMessageEnum,
+            recommend_queries: list = None, original_document_ids: list = None
     ):
-        session = self._get_session(session_id)
-
         chat_history = ChatHistory.objects.create(
-            session=session,
+            session_id=session_id,
             user=self.user,
             message_type=message_type,
             content=content,
