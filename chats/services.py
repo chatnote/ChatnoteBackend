@@ -157,7 +157,7 @@ class ChatHistoryService:
     def __init__(self, user):
         self.user = user
 
-    def get_history(self, session_id: int or None):
+    def get_history_qs(self, session_id: int or None):
         pass
 
     def add_history(
@@ -173,3 +173,4 @@ class ChatHistoryService:
             recommend_queries=recommend_queries,
             original_document_ids=original_document_ids
         )
+        return chat_history

@@ -45,7 +45,7 @@ class OriginalDocument(TimeStampedModel, SoftDeleteModel):
         get_latest_by = 'created'
 
 
-class NotionPage(TimeStampedModel):
+class NotionPage(TimeStampedModel, SoftDeleteModel):
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
     url = models.TextField(blank=True, null=True, default=None)
     page_id = models.CharField(max_length=300, null=True, default=None)

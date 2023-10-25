@@ -27,7 +27,13 @@ class ChatReferenceSchema(Schema):
 
 class ChatResponseDTO(Schema):
     session_id: int
+    chat_history_id: int
     query: str
     response: str
     recommend_queries: List[str] | None
     references: List[ChatReferenceSchema] | None
+
+
+class ChatEvalParams(Schema):
+    chat_history_id: int
+    message: str | None

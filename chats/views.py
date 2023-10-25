@@ -1,5 +1,5 @@
 from chats.enums import ChatMessageEnum
-from chats.schemas import ChatQueryParams, ChatReferenceSchema, ChatResponseDTO
+from chats.schemas import ChatQueryParams, ChatReferenceSchema, ChatResponseDTO, ChatEvalParams
 from chats.services import RetrievalService, ChatHistoryService, ChatService
 from cores.apis import api, test_api
 from cores.enums import ApiTagEnum
@@ -39,8 +39,17 @@ def chat(request, params: ChatQueryParams):
     response = chat_service.generate_response(query, search_response_schemas, chat_messages)
     recommend_queries = chat_service.generate_recommend_queries(query)
 
+    chat_history_response = chat_history_service.add_history(
+        session_id=session_id,
+        content=query,
+        message_type=ChatMessageEnum.ai,
+        recommend_queries=recommend_queries,
+        original_document_ids=[item.original_document_id for item in search_response_schemas]
+    )
+
     chat_response_schema = ChatResponseDTO(
         session_id=session_id,
+        chat_history_id=chat_history_response.id,
         query=query,
         response=response,
         references=[ChatReferenceSchema(
@@ -51,22 +60,41 @@ def chat(request, params: ChatQueryParams):
         recommend_queries=recommend_queries
     )
 
-    chat_history_service.add_history(
-        session_id=session_id,
-        content=query,
-        message_type=ChatMessageEnum.ai,
-        recommend_queries=recommend_queries,
-        original_document_ids=[item.original_document_id for item in search_response_schemas]
-    )
-
     return chat_response_schema
+
+
+@api.post(
+    path="chat/eval/good/",
+    response={200: None},
+    tags=[ApiTagEnum.chat]
+)
+def chat_eval_good(request, params: ChatEvalParams):
+    user = request.user
+    chat_history = user.chathistory_set.get(id=params.chat_history_id)
+    chat_history.eval_choice = 1
+    chat_history.eval_message = params.message
+    chat_history.save()
+
+
+@api.post(
+    path="chat/eval/bad/",
+    response={200: None},
+    tags=[ApiTagEnum.chat]
+)
+def chat_eval_bad(request, params: ChatEvalParams):
+    user = request.user
+    chat_history = user.chathistory_set.get(id=params.chat_history_id)
+    chat_history.eval_choice = -1
+    chat_history.eval_message = params.message
+    chat_history.save()
 
 
 @test_api.post(
     path="chat/history/",
+    response={200: None},
     tags=[ApiTagEnum.chat]
 )
 def chat(request):
     user = request.user
     session_id = None
-    ChatHistoryService(user).get_history(session_id)
+    ChatHistoryService(user).get_history_qs(session_id)

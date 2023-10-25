@@ -61,7 +61,8 @@ class NotionLoader:
         self.user = user
         self.session = requests.Session()
         self.session.headers.update(
-            {"Authorization": f"Bearer {user.notion_access_token}", "Notion-Version": "2022-06-28"})
+            {"Authorization": f"Bearer {user.notion_access_token}", "Notion-Version": "2022-06-28"}
+        )
         self.unsupported_block_types = [
             NotionBlockEnum.BOOKMARK,
             NotionBlockEnum.DIVIDER,
@@ -82,15 +83,15 @@ class NotionLoader:
             NotionBlockEnum.CHILD_PAGE,
             NotionBlockEnum.BOOKMARK,
             NotionBlockEnum.DIVIDER,
-            # NotionBlockEnum.EQUATION,
+            NotionBlockEnum.EQUATION,
             NotionBlockEnum.QUOTE,
-            # NotionBlockEnum.CODE,
+            NotionBlockEnum.CODE,
             NotionBlockEnum.CALLOUT,
         ]
 
         self.support_rich_text_data_type = [
             RichTextEnum.TEXT,
-            # RichTextType.EQUATION
+            RichTextEnum.EQUATION
         ]
 
         self.body_params = {"page_size": 100}

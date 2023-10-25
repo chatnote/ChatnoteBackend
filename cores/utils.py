@@ -21,3 +21,10 @@ def print_token_summary(func):
             print(f"Token summary: {func.__name__}\n{cb}")
         return res
     return wrapper
+
+
+def get_host_url(request):
+    scheme = request.scheme
+    host_url = request.get_host()
+
+    return f"{scheme}://{host_url}"

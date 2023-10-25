@@ -19,3 +19,5 @@ class ChatHistory(TimeStampedModel):
     content = models.TextField(null=True, blank=True, default=None)
     recommend_queries = ArrayField(models.CharField(max_length=300), blank=True, null=True)
     original_document_ids = ArrayField(models.CharField(max_length=300), blank=True, null=True)
+    eval_choice = models.IntegerField(null=True, blank=True, default=None)
+    eval_message = models.TextField(null=True, blank=True, default=None)

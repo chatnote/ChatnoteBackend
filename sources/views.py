@@ -7,11 +7,11 @@ from django.conf import settings
 from cores.apis import api, test_api
 from cores.enums import ApiTagEnum
 from cores.exception import CustomException
-from sources.services import NotionDocumentService, NotionSync, NotionValidator, PAGE_LIMIT, NotionPageService
+from sources.services import NotionDocumentService, NotionValidator, PAGE_LIMIT, NotionPageService
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO, NotionValidPayloadSchema, NotionValidPageSchema
 from sources.loaders.notion import NotionLoader
-from sources.schemas import NotionCallbackParams, SyncStatusSchema, NotionPageSchema, NotionPageDTO, \
+from sources.schemas import NotionCallbackParams, SyncStatusSchema, NotionPageDTO, \
     NotionPagePayloadDTO
 import base64
 
