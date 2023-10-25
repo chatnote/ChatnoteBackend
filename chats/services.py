@@ -15,9 +15,7 @@ from chats.enums import ChatMessageEnum
 from chats.models import ChatHistory, ChatSession
 from chats.prompts import SUGGESTED_QUESTIONS_AFTER_ANSWER_INSTRUCTION_PROMPT, CONDENSED_QUERY_PROMPT, CHAT_GENERATE_SYSTEM_PROMPT
 from chats.schemas import SearchResponseSchema
-from cores.elastics.clients import OriginalContextClient, ChunkedContextClient
-from cores.exception import CustomException
-from cores.llms.openais import ChatCompletion
+from cores.elastics.clients import ChunkedContextClient
 from cores.utils import print_token_summary, print_execution_time
 from sources.enums import DataSourceEnum
 
@@ -101,7 +99,6 @@ class ChatService:
 class RetrievalService:
     def __init__(self, user):
         self.user = user
-        self.original_client = OriginalContextClient()
         self.chunked_client = ChunkedContextClient()
         self.model = OpenAI(temperature=0)
 
