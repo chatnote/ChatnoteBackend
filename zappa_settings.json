@@ -52,6 +52,9 @@
       ]
     },
     "keep_warm": true,
-    "keep_warm_expression": "rate(4 minutes)"
+    "keep_warm_expression": "rate(4 minutes)",
+    "manage_roles": false,
+    "role_name": "chatnote-prod-ZappaLambdaExecutionRole",
+    "role_arn": "arn:aws:iam::974539925060:role/chatnote-prod-ZappaLambdaExecutionRole"
   }
 }
