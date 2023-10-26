@@ -241,8 +241,7 @@ class NotionSyncStatusService:
         except DataSyncStatus.DoesNotExist:
             sync_status = DataSyncStatus.objects.create(
                 user=self.user,
-                source=DataSourceEnum.notion,
-                is_running=True
+                source=DataSourceEnum.notion
             )
         return sync_status
 
