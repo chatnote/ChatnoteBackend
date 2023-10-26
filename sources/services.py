@@ -49,8 +49,8 @@ class NotionSplitter:
 class NotionValidator:
     @staticmethod
     def validate(user, pages: List[dict]):
-        if user.email in settings.ACCESS_ALLOWED_EMAILS:
-            return True
+        # if user.email in settings.ACCESS_ALLOWED_EMAILS:
+        #     return True
         if len(pages) <= PAGE_LIMIT:
             return True
         else:

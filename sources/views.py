@@ -4,7 +4,7 @@ from typing import List
 import requests
 from django.conf import settings
 
-from cores.apis import api, test_api
+from cores.apis import api
 from cores.enums import ApiTagEnum
 from cores.exception import CustomException
 from cores.utils import split_list_and_run
@@ -122,7 +122,7 @@ def source_status(request):
     user = request.user
 
     data_sync_status_qs = user.datasyncstatus_set.all()
-    if data_sync_status_qs.get(source=DataSourceEnum.notion).is_done:
+    if not data_sync_status_qs.get(source=DataSourceEnum.notion).is_running:
         NotionPageService(user).create_or_update_pages()
         NotionSyncStatusService(user).to_stop()
     return SyncStatusSchema.from_instances(data_sync_status_qs)

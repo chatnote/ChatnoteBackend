@@ -24,11 +24,7 @@ class DataSyncStatus(TimeStampedModel):
 
     @property
     def is_running(self):
-        return False if self.is_done else True
-
-    @property
-    def is_done(self):
-        return True if self.total_page_count == self.cur_page_count else False
+        return False if self.total_page_count == self.cur_page_count else True
 
 
 class OriginalDocument(TimeStampedModel, SoftDeleteModel):
