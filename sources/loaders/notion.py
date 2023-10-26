@@ -127,7 +127,7 @@ class NotionLoader:
         description = self.get_page_description(page)
         raw_content = ""
 
-        blocks = self.get_page_all_blocks(page["id"])
+        blocks = self.get_page_all_blocks(page)
         for block in blocks["results"]:
             block_type = block.get("type")
             if not block_type or block_type not in self.supported_block_types:
@@ -234,7 +234,8 @@ class NotionLoader:
             logger.error(f"Error getting children for block {block_id}: {e}")
             return {}
 
-    def get_page_all_blocks(self, page_id):
+    def get_page_all_blocks(self, page):
+        page_id = page["id"]
         # page의 child block 구할 때와 block의 child block 을 구할 때, 같은 API를 사용한다
 
         results = []
@@ -252,10 +253,14 @@ class NotionLoader:
                 ).json()
             except Exception as e:
                 logger.error(f"Error getting page {page_id}: {e}", exc_info=True)
+                print(response)
+                print(page)
                 break
 
             if response.get('object') == 'error':
                 logger.error(f"Error response 500 in page id : {page_id}")
+                print(response)
+                print(page)
                 break
 
             results += response['results']
