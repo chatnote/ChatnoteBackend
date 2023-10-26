@@ -252,11 +252,11 @@ class NotionLoader:
                 ).json()
             except Exception as e:
                 logger.error(f"Error getting page {page_id}: {e}", exc_info=True)
-                continue
+                break
 
             if response.get('object') == 'error':
                 logger.error(f"Error response 500 in page id : {page_id}")
-                continue
+                break
 
             results += response['results']
             if not response["has_more"]:
