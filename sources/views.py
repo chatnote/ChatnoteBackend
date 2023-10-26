@@ -12,20 +12,18 @@ from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO, NotionValidPayloadSchema, NotionValidPageSchema
 from sources.loaders.notion import NotionLoader
 from sources.schemas import NotionCallbackParams, SyncStatusSchema, NotionPageDTO, \
-    NotionPagePayloadDTO
+    NotionPagePayloadDTO, NotionAccessTokenParams
 import base64
 
 from sources.services import NotionSyncStatusService
 from sources.tasks import sync_notion_task
 
 
-@test_api.get(
-    path="notion/callback/",
-    auth=None,
-    description=f"""NOTION AUTH_URL: {settings.NOTION_AUTH_URL}""",
-    tags=[ApiTagEnum.test]
+@api.get(
+    path="source/notion/callback/",
+    tags=[ApiTagEnum.source]
 )
-def code_notion(request, code: str):
+def notion_callback(request, code: str, redirect_url: str):
     credentials = f"{settings.NOTION_CLIENT_ID}:{settings.NOTION_SECRET}"
     encoded_credentials = base64.b64encode(credentials.encode()).decode()
 
@@ -39,19 +37,13 @@ def code_notion(request, code: str):
         json={
             "grant_type": "authorization_code",
             "code": code,
-            'redirect_uri': settings.NOTION_REDIRECT_URL
+            'redirect_uri': redirect_url
         }
     )
-    return response.json()
+    access_token = response.json()["access_token"]
 
-
-@api.post(
-    path="source/notion/access_token/",
-    tags=[ApiTagEnum.source]
-)
-def save_notion_access_token(request, params: NotionCallbackParams):
     user = request.user
-    user.notion_access_token = params.access_token
+    user.notion_access_token = access_token
     user.save()
 
 
@@ -64,7 +56,7 @@ def sync_notion(request):
     user = request.user
 
     notion_loader = NotionLoader(user)
-    pages = notion_loader.get_all_page
+    pages = notion_loader.get_all_page()
 
     # page count save
     is_valid = NotionValidator.validate(user, pages)

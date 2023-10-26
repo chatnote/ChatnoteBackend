@@ -96,7 +96,6 @@ class NotionLoader:
 
         self.body_params = {"page_size": 100}
 
-    @cached_property
     def get_all_page_or_databases(self) -> List[dict]:
         # Get all pages
         pages_or_databases = []
@@ -115,9 +114,8 @@ class NotionLoader:
 
         return pages_or_databases
 
-    @cached_property
     def get_all_page(self) -> List[dict]:
-        pages_or_databases = self.get_all_page_or_databases
+        pages_or_databases = self.get_all_page_or_databases()
         results = []
         if pages_or_databases:
             results = [item for item in pages_or_databases if item["object"] == "page"]
@@ -173,7 +171,7 @@ class NotionLoader:
         notion_document_schemas = []
 
         if not pages:
-            pages = self.get_all_page
+            pages = self.get_all_page()
 
         # Get all pages content
         for i, page in enumerate(tqdm(pages)):
@@ -350,7 +348,7 @@ class NotionLoader:
         return counts
 
     def get_pages_and_counts(self) -> List[NotionPageSchema]:
-        pages = self.get_all_page
+        pages = self.get_all_page()
         page_id_2_info = {}
 
         for page in pages:

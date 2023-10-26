@@ -7,7 +7,7 @@ class GoogleLoginService:
         pass
 
     @staticmethod
-    def get_token(code: str) -> str:
+    def get_token(code: str, redirect_url: str) -> str:
         # https://developers.google.com/identity/protocols/oauth2/web-server?hl=ko#exchange-authorization-code
         response = requests.post(
             url=f"https://oauth2.googleapis.com/token",
@@ -19,7 +19,7 @@ class GoogleLoginService:
                 "client_id": settings.GOOGLE_CLIENT_ID,
                 "client_secret": settings.GOOGLE_CLIENT_SECRET,
                 "code": code,
-                "redirect_uri": settings.GOOGLE_CALLBACK_URI,
+                "redirect_uri": redirect_url,
                 "grant_type": "authorization_code",
             }
         )
@@ -45,7 +45,7 @@ class AppleLoginService:
         pass
 
     @staticmethod
-    def get_token(code):
+    def get_token(code, redirect_url):
         response = requests.post(
             url="https://appleid.apple.com/auth/token",
             headers={
@@ -57,7 +57,7 @@ class AppleLoginService:
                 'code': code,
                 "client_id": settings.APPLE_CLIENT_ID,
                 "client_secret": settings.APPLE_CLIENT_SECRET,
-                'redirect_uri': settings.APPLE_REDIRECT_URL,
+                'redirect_uri': redirect_url,
             }
         )
         return response.json()["access_token"]

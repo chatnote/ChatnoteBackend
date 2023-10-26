@@ -7,6 +7,11 @@ from sources.enums import DataSourceEnum
 
 
 class NotionCallbackParams(Schema):
+    code: str
+    redirect_url: str
+
+
+class NotionAccessTokenParams(Schema):
     access_token: str
 
 

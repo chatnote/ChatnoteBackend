@@ -42,8 +42,8 @@ def delete_user(request):
     response={200: SignUpResponse},
     tags=[ApiTagEnum.user]
 )
-def google_callback(request, code: str):
-    access_token = GoogleLoginService.get_token(code)
+def google_callback(request, code: str, redirect_url: str):
+    access_token = GoogleLoginService.get_token(code, redirect_url)
     email = GoogleLoginService.get_email(access_token)
 
     try:
@@ -61,8 +61,8 @@ def google_callback(request, code: str):
     response={200: SignUpResponse},
     tags=[ApiTagEnum.user]
 )
-def signup_apple(request, code: str):
-    access_token = AppleLoginService.get_token(code)
+def signup_apple(request, code: str, redirect_url: str):
+    access_token = AppleLoginService.get_token(code, redirect_url)
     email = AppleLoginService.get_email(access_token)
 
     try:
