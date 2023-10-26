@@ -8,7 +8,8 @@ from cores.apis import api, test_api
 from cores.enums import ApiTagEnum
 from cores.exception import CustomException
 from cores.utils import split_list_and_run
-from sources.services import NotionDocumentService, NotionValidator, PAGE_LIMIT, NotionPageService
+from sources.constants import PAGE_LIMIT
+from sources.services import NotionDocumentService, NotionValidator, NotionPageService
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO, NotionValidPayloadSchema, NotionValidPageSchema
 from sources.loaders.notion import NotionLoader

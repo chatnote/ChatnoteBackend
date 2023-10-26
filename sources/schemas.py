@@ -3,6 +3,7 @@ from typing import List
 from ninja import Schema
 from pydantic.datetime_parse import datetime
 
+from sources.constants import PAGE_LIMIT
 from sources.enums import DataSourceEnum
 
 
@@ -19,6 +20,7 @@ class SyncStatusSchema(Schema):
     source: DataSourceEnum
     total_page_count: int | None
     current_page_count: int | None
+    limit_page_count: int
     is_running: bool
 
     @classmethod
@@ -27,6 +29,7 @@ class SyncStatusSchema(Schema):
             source=data_sync_status.source,
             total_page_count=data_sync_status.total_page_count,
             current_page_count=data_sync_status.cur_page_count,
+            limit_page_count=PAGE_LIMIT,
             is_running=data_sync_status.is_running
         )
 

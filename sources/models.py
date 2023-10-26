@@ -24,7 +24,7 @@ class DataSyncStatus(TimeStampedModel):
 
     @property
     def is_running(self):
-        return True if self.is_done else False
+        return False if self.is_done else True
 
     @property
     def is_done(self):

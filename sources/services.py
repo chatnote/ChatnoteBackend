@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils.functional import cached_property
 
+from sources.constants import PAGE_LIMIT
 from sources.loaders.notion import NotionLoader
 from sources.models import DataSyncStatus, NotionPage
 
@@ -16,9 +17,6 @@ from cores.elastics.clients import ChunkedContextClient
 from sources.schemas import OriginalDocumentSchema
 from sources.enums import DataSourceEnum
 from sources.models import OriginalDocument
-
-
-PAGE_LIMIT = 200
 
 
 class NotionSplitter:
