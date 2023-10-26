@@ -6,7 +6,7 @@
     "project_name": "chatnote",
     "runtime": "python3.10",
     "s3_bucket": "zappa-cached-xxxxxx-dev",
-    "memory_size": 2048,
+    "memory_size": 4096,
     "endpoint_configuration": [
       "REGIONAL"
     ],
@@ -22,6 +22,7 @@
         "sg-00f6d791786d9f0f6"
       ]
     },
+    "timeout_seconds": 900,
     "keep_warm": true,
     "keep_warm_expression": "rate(4 minutes)",
     "manage_roles": false,
@@ -35,7 +36,7 @@
     "project_name": "chatnote",
     "runtime": "python3.10",
     "s3_bucket": "zappa-cached-xxxxxx-prod",
-    "memory_size": 2048,
+    "memory_size": 4096,
     "endpoint_configuration": [
       "REGIONAL"
     ],
@@ -51,6 +52,7 @@
         "sg-00f6d791786d9f0f6"
       ]
     },
+    "timeout_seconds": 900,
     "keep_warm": true,
     "keep_warm_expression": "rate(4 minutes)",
     "manage_roles": false,
