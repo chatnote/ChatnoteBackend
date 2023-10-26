@@ -7,7 +7,7 @@ from users.models import User
 
 
 @task
-def sync_notion_task(user_id: int, pages: List[dict]):
+def sync_notion_task(pages: List[dict], user_id: int):
     user = User.objects.get(id=user_id)
 
     notion_document_schemas = NotionLoader(user).overall_process(pages)

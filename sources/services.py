@@ -51,8 +51,8 @@ class NotionSplitter:
 class NotionValidator:
     @staticmethod
     def validate(user, pages: List[dict]):
-        # if user.email in settings.ACCESS_ALLOWED_EMAILS:
-        #     return True
+        if user.email in settings.ACCESS_ALLOWED_EMAILS:
+            return True
         if len(pages) <= PAGE_LIMIT:
             return True
         else:
@@ -155,7 +155,7 @@ class NotionPageService:
     def create_or_update_pages(self):
         self.user.notionpage_set.all().delete()
 
-        notion_page_schemas = NotionLoader(self.user).get_pages_and_counts()
+        notion_page_schemas = NotionLoader(self.user).get_all_page_schemas()
         notion_page_for_create = []
 
         for item in notion_page_schemas:
@@ -260,6 +260,4 @@ class NotionSyncStatusService:
     def to_stop(self):
         sync_status = self.get_or_create_sync_status()
         sync_status.last_sync_datetime = datetime.now()
-        sync_status.total_page_count = None
-        sync_status.cur_page_count = None
         sync_status.save()

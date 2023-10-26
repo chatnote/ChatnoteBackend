@@ -28,8 +28,6 @@ class DataSyncStatus(TimeStampedModel):
 
     @property
     def is_done(self):
-        if self.total_page_count is None or self.cur_page_count is None:
-            return False
         return True if self.total_page_count == self.cur_page_count else False
 
 

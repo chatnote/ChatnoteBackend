@@ -28,3 +28,14 @@ def get_host_url(request):
     host_url = request.get_host()
 
     return f"{scheme}://{host_url}"
+
+
+def split_list_and_run(overall_list: list, split_num: int, func, *args):
+    overall_split_list = []
+    for i in range(0, len(overall_list), split_num):
+        split_list = overall_list[i:i + split_num]
+        overall_split_list.append(split_list)
+
+    for split_list in overall_split_list:
+        if split_list:
+            func(split_list, *args)

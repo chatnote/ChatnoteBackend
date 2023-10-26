@@ -234,9 +234,6 @@ class NotionLoader:
             logger.error(f"Error getting children for block {block_id}: {e}")
             return {}
 
-    def get_page(self, page_id):
-        return self.session.get(f"https://api.notion.com/v1/pages/{page_id}").json()
-
     def get_page_all_blocks(self, page_id):
         # page의 child block 구할 때와 block의 child block 을 구할 때, 같은 API를 사용한다
 
@@ -307,23 +304,13 @@ class NotionLoader:
         return description
 
     @staticmethod
-    def get_parent_id(p_or_d):
-        page_id = p_or_d["parent"].get("page_id", None)
-        if page_id:
-            return page_id
+    def is_workspace_page(p_or_d):
+        is_workspace = p_or_d["parent"].get("workspace", None)
 
-        database_id = p_or_d["parent"].get("database_id", None)
-        if database_id:
-            return database_id
-
-        return None  # workspace page
-
-    @staticmethod
-    def get_object_type(p_or_d):
-        if p_or_d["object"] == "database":
-            return "database"
-        elif p_or_d["object"] == "page":
-            return "page"
+        if is_workspace:
+            return True
+        else:
+            return False
 
     @staticmethod
     def get_icon(p_or_d):
@@ -347,35 +334,16 @@ class NotionLoader:
                     counts += self._get_subpage_counts(p_or_d_id_2_info, child_id, info["object_type"])
         return counts
 
-    def get_pages_and_counts(self) -> List[NotionPageSchema]:
-        pages = self.get_all_page()
-        page_id_2_info = {}
-
-        for page in pages:
-            page_id_2_info[page["id"]] = {
-                "title": self.get_page_title(page),
-                "parent_id": self.get_parent_id(page),
-                "object_type": self.get_object_type(page),
-                "icon": self.get_icon(page),
-                "url": page["url"],
-                "child_ids": []
-            }
-        for _id, _info in page_id_2_info.items():
-            parent_id = _info["parent_id"]
-            if parent_id:
-                page_id_2_info[parent_id]["child_ids"].append(_id)
-
+    def get_all_page_schemas(self, pages: list = None) -> List[NotionPageSchema]:
         results = []
-        for p_or_d_id, info in page_id_2_info.items():
+        if not pages:
+            pages = self.get_all_page()
+        for page in pages:
             results.append(NotionPageSchema(
-                url=info["url"],
-                page_id=p_or_d_id,
-                title=info["title"],
-                icon=info["icon"],
-                is_workspace=False if info["parent_id"] else True
+                url=page["url"],
+                page_id=page["id"],
+                title=self.get_page_title(page),
+                icon=self.get_icon(page),
+                is_workspace=True if self.is_workspace_page(page) else False
             ))
         return results
-
-    def get_workspace_pages(self) -> List[NotionPageSchema]:
-        notion_page_schemas = self.get_pages_and_counts()
-        return [item for item in notion_page_schemas if item.is_workspace]

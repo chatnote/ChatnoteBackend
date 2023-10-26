@@ -7,12 +7,12 @@ from django.conf import settings
 from cores.apis import api, test_api
 from cores.enums import ApiTagEnum
 from cores.exception import CustomException
+from cores.utils import split_list_and_run
 from sources.services import NotionDocumentService, NotionValidator, PAGE_LIMIT, NotionPageService
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO, NotionValidPayloadSchema, NotionValidPageSchema
 from sources.loaders.notion import NotionLoader
-from sources.schemas import NotionCallbackParams, SyncStatusSchema, NotionPageDTO, \
-    NotionPagePayloadDTO, NotionAccessTokenParams
+from sources.schemas import SyncStatusSchema, NotionPageDTO, NotionPagePayloadDTO
 import base64
 
 from sources.services import NotionSyncStatusService
@@ -61,8 +61,7 @@ def sync_notion(request):
     # page count save
     is_valid = NotionValidator.validate(user, pages)
     if not is_valid:
-        notion_page_schemas = notion_loader.get_workspace_pages()
-
+        workspace_notion_page_schemas = [item for item in notion_loader.get_all_page_schemas(pages) if item.is_workspace]
         raise CustomException(
             **NotionValidErrorDTO(
                 error_code=NotionValidErrorEnum.notion_page_limit,
@@ -72,22 +71,15 @@ def sync_notion(request):
                     notion_page_schemas=[NotionValidPageSchema(
                         title=notion_page.title,
                         icon=notion_page.icon
-                    ) for notion_page in notion_page_schemas]
+                    ) for notion_page in workspace_notion_page_schemas]
                 )
             ).dict()
         )
 
-    total_split_pages = []
-    for i in range(0, len(pages), 50):
-        split_pages = pages[i:i + 50]
-        total_split_pages.append(split_pages)
-
-    if total_split_pages:
+    if pages:
         NotionSyncStatusService(user).to_running(len(pages))
 
-    for split_pages in total_split_pages:
-        if split_pages:
-            sync_notion_task(user.id, split_pages)
+    split_list_and_run(pages, 50, sync_notion_task, user.id)
 
 
 @api.post(
