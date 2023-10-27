@@ -14,7 +14,7 @@ from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from cores.elastics.clients import ChunkedContextClient
-from sources.schemas import OriginalDocumentSchema
+from sources.schemas import OriginalDocumentSchema, NotionPageSchema
 from sources.enums import DataSourceEnum
 from sources.models import OriginalDocument
 
@@ -57,42 +57,78 @@ class NotionValidator:
             return False
 
 
-class NotionDocumentService:
+class NotionService:
     def __init__(self, user):
         self.user = user
         self.chunked_client = ChunkedContextClient()
 
-    def create_documents(self, notion_document_schemas: List[OriginalDocumentSchema]):
-        notion_document_list = [OriginalDocument(
-            user_id=document.user_id,
-            url=document.url,
-            title=document.title,
-            text=document.text,
-            text_hash=document.text_hash,
+    @staticmethod
+    def _url_2_notion_page_schema(notion_page_schemas: List[NotionPageSchema]):
+        url_2_notion_page_schema = {}
+        for page_schema in notion_page_schemas:
+            url_2_notion_page_schema[page_schema.url] = page_schema
+        return url_2_notion_page_schema
+
+    def _notion_page_schemas_2_original_document_schemas(self, notion_page_schemas: List[NotionPageSchema]):
+        return [
+            OriginalDocumentSchema(
+                user_id=self.user.id,
+                data_source_type=DataSourceEnum.notion,
+                url=document.url,
+                title=document.title,
+                text=document.text,
+                text_hash=document.text_hash
+            ) for document in notion_page_schemas
+        ]
+
+    def create_documents(self, notion_page_schemas: List[NotionPageSchema]):
+        original_document_qs_list = [OriginalDocument(
+            user_id=self.user.id,
+            url=page.url,
+            title=page.title,
+            text=page.text,
+            text_hash=page.text_hash,
             source=DataSourceEnum.notion
-        ) for document in notion_document_schemas]
-        OriginalDocument.objects.bulk_create(notion_document_list)
+        ) for page in notion_page_schemas]
+        OriginalDocument.objects.bulk_create(original_document_qs_list)
 
-        self.create_chunked_documents(notion_document_schemas)
+        original_document_schemas = self._notion_page_schemas_2_original_document_schemas(notion_page_schemas)
+        self.create_chunked_documents(original_document_schemas)
 
-    def update_documents(self, notion_document_schemas: List[OriginalDocumentSchema]):
-        url_2_document = {}
-        for document in notion_document_schemas:
-            url_2_document[document.url] = document
+        notion_page_qs_list = [
+            NotionPage(
+                user=self.user,
+                url=item.url,
+                page_id=item.page_id,
+                title=item.title,
+                icon=item.icon,
+                is_workspace=item.is_workspace
+            ) for item in notion_page_schemas]
+        NotionPage.objects.bulk_create(notion_page_qs_list)
 
-        notion_document_qs = self.user.originaldocument_set.filter(url__in=url_2_document.keys())
-
+    def update_documents(self, notion_page_schemas: List[NotionPageSchema]):
+        url_2_notion_page_schema = self._url_2_notion_page_schema(notion_page_schemas)
+        notion_document_qs = self.user.originaldocument_set.filter(url__in=url_2_notion_page_schema.keys())
         for notion_document in notion_document_qs:
-            notion_document.title = url_2_document[notion_document.url].title
-            notion_document.text = url_2_document[notion_document.url].text
-            notion_document.text_hash = url_2_document[notion_document.url].text_hash
-
+            notion_document.title = url_2_notion_page_schema[notion_document.url].title
+            notion_document.text = url_2_notion_page_schema[notion_document.url].text
+            notion_document.text_hash = url_2_notion_page_schema[notion_document.url].text_hash
         OriginalDocument.objects.bulk_update(notion_document_qs, ["title", "text", "text_hash"])
-        self.update_chunked_documents(notion_document_schemas)
+
+        original_document_schemas = self._notion_page_schemas_2_original_document_schemas(notion_page_schemas)
+        self.update_chunked_documents(original_document_schemas)
+
+        notion_page_for_update_qs = self.user.notionpage_set.filter(url=url_2_notion_page_schema.keys()).all()
+        for notion_page in notion_page_for_update_qs:
+            notion_page.title = url_2_notion_page_schema[notion_page.url].title
+            notion_page.icon = url_2_notion_page_schema[notion_page.url].icon
+            notion_page.is_workspace = url_2_notion_page_schema[notion_page.url].is_workspace
+        NotionPage.objects.bulk_update(notion_page_for_update_qs, ['title', 'icon', 'is_workspace'])
 
     def delete_documents(self, document_urls: List[str]):
         self.user.originaldocument_set.filter(url__in=document_urls).all().delete()
         self.chunked_client.delete_documents(self.user, document_urls)
+        self.user.notionpage_set.filter(url__in=document_urls).all().delete()
 
     def delete_all_documents(self):
         self.user.originaldocument_set.all().delete()
@@ -111,90 +147,28 @@ class NotionDocumentService:
         self.create_chunked_documents(notion_document_schemas)
 
 
-class NotionPageService:
-    def __init__(self, user):
-        self.user = user
-
-    @transaction.atomic
-    def create_pages(self, notion_page_schemas):
-        notion_page_for_create = []
-
-        for item in notion_page_schemas:
-            notion_page_for_create.append(NotionPage(
-                user=self.user,
-                url=item.url,
-                page_id=item.page_id,
-                title=item.title,
-                icon=item.icon,
-                is_workspace=item.is_workspace
-            ))
-
-        NotionPage.objects.bulk_create(notion_page_for_create)
-
-    @transaction.atomic
-    def update_pages(self, notion_page_schemas):
-        document_url_2_info_for_update = {}
-        for document in notion_page_schemas:
-            document_url_2_info_for_update[document.url] = document
-
-        notion_page_for_update_qs = self.user.notionpage_set.filter(url=document_url_2_info_for_update.keys()).all()
-        for notion_page in notion_page_for_update_qs:
-            notion_page.title = document_url_2_info_for_update[notion_page.url].title
-            notion_page.icon = document_url_2_info_for_update[notion_page.url].icon
-            notion_page.is_workspace = document_url_2_info_for_update[notion_page.url].is_workspace
-
-        NotionPage.objects.bulk_update(notion_page_for_update_qs, ['title', 'icon', 'is_workspace'])
-
-    @transaction.atomic
-    def delete_pages(self, document_urls):
-        self.user.notionpage_set.filter(url__in=document_urls).all().delete()
-
-    @transaction.atomic
-    def create_or_update_pages(self):
-        self.user.notionpage_set.all().delete()
-
-        notion_page_schemas = NotionLoader(self.user).get_all_page_schemas()
-        notion_page_for_create = []
-
-        for item in notion_page_schemas:
-            notion_page_for_create.append(NotionPage(
-                user=self.user,
-                url=item.url,
-                page_id=item.page_id,
-                title=item.title,
-                icon=item.icon,
-                is_workspace=item.is_workspace
-            ))
-
-        NotionPage.objects.bulk_create(notion_page_for_create)
-
-
 class NotionSync:
-    def __init__(self, user, notion_document_schemas: List[OriginalDocumentSchema]):
+    def __init__(self, user, notion_page_schemas: List[NotionPageSchema]):
         self.user = user
-        self.notion_document_schemas = notion_document_schemas
-        self.notion_document_service = NotionDocumentService(self.user)
-        self.new_document_urls = [notion_document.url for notion_document in notion_document_schemas]
-        self.new_text_hashes = [notion_document.text_hash for notion_document in notion_document_schemas]
+        self.notion_page_schemas = notion_page_schemas
+        self.notion_document_service = NotionService(self.user)
+        self.new_document_urls = [notion_document.url for notion_document in notion_page_schemas]
+        self.new_text_hashes = [notion_document.text_hash for notion_document in notion_page_schemas]
         self.chunked_client = ChunkedContextClient()
 
-    def overall_process(self):
+    def overall_process(self, total_page_urls):
         # notion text update
-        documents_for_create = self.create_documents()
-        documents_for_update = self.update_documents()
-        document_urls_for_delete = self.delete_documents()
+        self.create_documents()
+        self.update_documents()
+        self.delete_documents(total_page_urls)
 
-        # NotionPageService(self.user).create_pages(documents_for_create)
-        # NotionPageService(self.user).update_pages(documents_for_update)
-        # NotionPageService(self.user).delete_pages(document_urls_for_delete)
-
-        # self.chunked_client.refresh_index()
-
-    def create_documents(self) -> List[str]:
-        documents_for_create = [document for document in self.notion_document_schemas if document.url not in self.saved_document_urls]
+    def create_documents(self):
+        documents_for_create = [
+            document for document in self.notion_page_schemas if document.url not in self.saved_document_urls
+        ]
         if documents_for_create:
             self.notion_document_service.create_documents(documents_for_create)
-        print(f"documents_for_create: {len(documents_for_create)}개")
+        print(f"documents for create: {len(documents_for_create)}개")
         return documents_for_create
 
     def update_documents(self):
@@ -206,15 +180,18 @@ class NotionSync:
             text_hash__in=changed_text_hashes
         ).values_list("url", flat=True))
 
-        documents_for_update = [document for document in self.notion_document_schemas if document.url in document_urls_for_update]
+        documents_for_update = [
+            document for document in self.notion_page_schemas if document.url in document_urls_for_update
+        ]
         if documents_for_update:
             self.notion_document_service.update_documents(documents_for_update)
-        print(f"documents for exists: {len(existed_document_urls)}개")
-        print(f"documents_for_update: {len(documents_for_update)}개")
+            print(f"documents for update: {len(documents_for_update)}개")
+        else:
+            print(f"documents for exists: {len(existed_document_urls)}개")
         return documents_for_update
 
-    def delete_documents(self):
-        document_urls = list(set(self.saved_document_urls) - set(self.new_document_urls))
+    def delete_documents(self, total_page_urls: list):
+        document_urls = list(set(self.saved_document_urls) - set(total_page_urls))
         if document_urls:
             self.notion_document_service.delete_documents(document_urls)
         print(f"documents_for_delete: {len(document_urls)}개")

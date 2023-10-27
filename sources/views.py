@@ -10,7 +10,7 @@ from cores.enums import ApiTagEnum
 from cores.exception import CustomException
 from cores.utils import split_list_and_run
 from sources.constants import PAGE_LIMIT
-from sources.services import NotionDocumentService, NotionValidator, NotionPageService
+from sources.services import NotionService, NotionValidator
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO, NotionValidPayloadSchema, NotionValidPageSchema
 from sources.loaders.notion import NotionLoader
@@ -80,8 +80,9 @@ def sync_notion(request):
 
     if pages:
         NotionSyncStatusService(user).to_running(len(pages))
+        total_page_urls = [page["url"] for page in pages]  # for delete
 
-    split_list_and_run(pages, 50, sync_notion_task, user.id)
+    split_list_and_run(pages, 30, sync_notion_task, user.id, total_page_urls)
 
 
 @api.post(
@@ -90,7 +91,7 @@ def sync_notion(request):
 )
 def notion_delete(request):
     user = request.user
-    NotionDocumentService(user).delete_all_documents()
+    NotionService(user).delete_all_documents()
 
 
 @api.get(
@@ -124,7 +125,6 @@ def source_status(request):
 
     data_sync_status_qs = user.datasyncstatus_set.all()
     if not data_sync_status_qs.get(source=DataSourceEnum.notion).is_running:
-        NotionPageService(user).create_or_update_pages()
         ChunkedContextClient().refresh_index()
         NotionSyncStatusService(user).to_stop()
     return SyncStatusSchema.from_instances(data_sync_status_qs)

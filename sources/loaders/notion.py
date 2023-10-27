@@ -7,7 +7,7 @@ from django.utils.functional import cached_property
 from tqdm import tqdm
 
 from cores.enums import CustomEnum
-from sources.schemas import OriginalDocumentSchema, NotionPageSchema
+from sources.schemas import NotionPageSchema
 from sources.enums import DataSourceEnum
 
 logger = logging.getLogger(__name__)
@@ -122,9 +122,12 @@ class NotionLoader:
 
         return results
 
-    def process_page(self, page) -> OriginalDocumentSchema:
+    def process_page(self, page) -> NotionPageSchema:
         title = self.get_page_title(page)
         description = self.get_page_description(page)
+        page_id = self.get_id(page)
+        icon = self.get_icon(page)
+        is_workspace = self.is_workspace_page(page)
         raw_content = ""
 
         blocks = self.get_page_all_blocks(page)
@@ -158,17 +161,18 @@ class NotionLoader:
             if raw_content:
                 text += f"{raw_content}"
 
-            return OriginalDocumentSchema(
-                user_id=self.user.id,
-                data_source_type=DataSourceEnum.notion,
+            return NotionPageSchema(
                 url=page["url"],
+                page_id=page_id,
                 title=title,
                 text=text,
-                text_hash=get_hash(text)
+                text_hash=get_hash(text),
+                icon=icon,
+                is_workspace=is_workspace
             )
 
     def overall_process(self, pages=None):
-        notion_document_schemas = []
+        notion_page_schemas = []
 
         if not pages:
             pages = self.get_all_page()
@@ -179,11 +183,11 @@ class NotionLoader:
                 # TODO: Handle databases
                 continue
             elif page["object"] == "page":
-                notion_document = self.process_page(page)
-                if notion_document:
-                    notion_document_schemas.append(notion_document)
+                processed_page = self.process_page(page)
+                if processed_page:
+                    notion_page_schemas.append(processed_page)
 
-        return notion_document_schemas
+        return notion_page_schemas
 
     def process_nested_children(self, children_blocks, raw_content, block_type=None):
         results = children_blocks["results"] if children_blocks.get("results") else []
@@ -235,7 +239,7 @@ class NotionLoader:
             return {}
 
     def get_page_all_blocks(self, page):
-        page_id = page["id"]
+        page_id = self.get_id(page)
         # page의 child block 구할 때와 block의 child block 을 구할 때, 같은 API를 사용한다
 
         results = []
@@ -322,6 +326,10 @@ class NotionLoader:
         icon = p_or_d["icon"]
         emoji = icon.get("emoji") if icon else None
         return emoji if emoji else "📄"
+
+    @staticmethod
+    def get_id(p_or_d):
+        return p_or_d["id"]
 
     def _get_subpage_counts(self, p_or_d_id_2_info, p_or_d_id, object_type):
         child_ids = p_or_d_id_2_info[p_or_d_id]["child_ids"]
