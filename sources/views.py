@@ -5,6 +5,7 @@ import requests
 from django.conf import settings
 
 from cores.apis import api
+from cores.elastics.clients import ChunkedContextClient
 from cores.enums import ApiTagEnum
 from cores.exception import CustomException
 from cores.utils import split_list_and_run
@@ -124,5 +125,6 @@ def source_status(request):
     data_sync_status_qs = user.datasyncstatus_set.all()
     if not data_sync_status_qs.get(source=DataSourceEnum.notion).is_running:
         NotionPageService(user).create_or_update_pages()
+        ChunkedContextClient().refresh_index()
         NotionSyncStatusService(user).to_stop()
     return SyncStatusSchema.from_instances(data_sync_status_qs)
