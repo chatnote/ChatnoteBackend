@@ -22,6 +22,7 @@ class SyncStatusSchema(Schema):
     current_page_count: int | None
     limit_page_count: int
     is_running: bool
+    last_sync_datetime: datetime | None
 
     @classmethod
     def from_instance(cls, data_sync_status):
@@ -30,7 +31,8 @@ class SyncStatusSchema(Schema):
             total_page_count=data_sync_status.total_page_count,
             current_page_count=data_sync_status.cur_page_count,
             limit_page_count=PAGE_LIMIT,
-            is_running=data_sync_status.is_running
+            is_running=data_sync_status.is_running,
+            last_sync_datetime=data_sync_status.last_sync_datetime
         )
 
     @classmethod
