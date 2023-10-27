@@ -14,7 +14,7 @@ docker run --rm -it -v ~/.aws:/root/.aws -v $(pwd):/aws amazon/aws-cli ecr get-l
 docker push $ECR_PATH:$TAG
 
 # zappa update and update api gateway
-zappa deploy prod -d $ECR_PATH:$TAG
+zappa update prod -d $ECR_PATH:$TAG
 
 # zappa_settings.py 파일 삭제 및 로컬 docker image 삭제
 rm -r zappa_settings.py
