@@ -62,8 +62,8 @@ class NotionPageSchema(Schema):
     url: str
     page_id: str
     title: str
-    text: str
-    text_hash: str  # original text parsing 로직을 바꾸면 hash 값 업데이트
+    text: str | None
+    text_hash: str | None  # original text parsing 로직을 바꾸면 hash 값 업데이트
     icon: str
     is_workspace: bool
     update_datetime: datetime | None
