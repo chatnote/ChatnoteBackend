@@ -1,4 +1,16 @@
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
 from chatnote.settings.base import *
+
+sentry_sdk.init(
+    dsn="https://d5e9648a5ed89933e97dc6ebb4ad2ec9@o4505662187569152.ingest.sentry.io/4505991435911168",
+    integrations=[DjangoIntegration()],
+    # If you wish to associate users to errors (assuming you are using
+    # django.contrib.auth) you may enable sending PII data.
+    send_default_pii=True,
+    environment="prod",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
