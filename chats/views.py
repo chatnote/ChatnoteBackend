@@ -41,7 +41,7 @@ def chat(request, params: ChatQueryParams):
 
     chat_history_response = chat_history_service.add_history(
         session_id=session_id,
-        content=query,
+        content=response,
         message_type=ChatMessageEnum.ai,
         recommend_queries=recommend_queries,
         original_document_ids=[item.original_document_id for item in search_response_schemas]
