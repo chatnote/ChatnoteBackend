@@ -35,8 +35,8 @@ class ChatService:
         self.model_gpt35_turbo = ChatOpenAI(temperature=0.1)
         self.model_gpt35_turbo_16k = ChatOpenAI(model_name="gpt-3.5-turbo-16k", temperature=0.1)
 
-    @print_execution_time
     @print_token_summary
+    @print_execution_time
     def get_condensed_query(self, query):
         prompt = ChatPromptTemplate.from_messages([
             ("human", CONDENSED_QUERY_PROMPT)
@@ -61,14 +61,14 @@ class ChatService:
 
         total_tokens = get_num_tokens_from_text(total_content)
         print(f"total num tokens: {total_tokens}")
-        if total_tokens > 4000:
+        if total_tokens > 3700:
             # raise CustomException(error_code="invalid_token_num_limit")
             return False
         else:
             return True
 
-    @print_execution_time
     @print_token_summary
+    @print_execution_time
     def generate_response(self, query, search_response_schemas, chat_messages) -> str:
         context = self._get_context_from_search(search_response_schemas)
         chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_SYSTEM_PROMPT.format(context=context)))
