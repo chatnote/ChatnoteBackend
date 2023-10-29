@@ -82,7 +82,7 @@ def sync_notion(request):
         NotionSyncStatusService(user).to_running(len(pages))
         total_page_urls = [page["url"] for page in pages]  # for delete
 
-    split_list_and_run(pages, 30, sync_notion_task, user.id, total_page_urls)
+        split_list_and_run(pages, 30, sync_notion_task, user.id, total_page_urls)
 
 
 @api.post(

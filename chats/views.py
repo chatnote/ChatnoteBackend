@@ -1,11 +1,25 @@
+import concurrent.futures
+import time
+
 from chats.enums import ChatMessageEnum
 from chats.schemas import ChatQueryParams, ChatReferenceSchema, ChatResponseDTO, ChatEvalParams
 from chats.services import RetrievalService, ChatHistoryService, ChatService
 from cores.apis import api, test_api
 from cores.enums import ApiTagEnum
+from cores.utils import print_execution_time
 
 
-# Create your views here.
+def test(chat_service, retrieval_service, query, chat_messages):
+    # condense question
+    condensed_query = chat_service.get_condensed_query(query)
+
+    # retrieve docs
+    search_response_schemas = retrieval_service.search(condensed_query)
+
+    # generate response
+    response = chat_service.generate_response(query, search_response_schemas, chat_messages)
+
+    return response, search_response_schemas
 
 
 @api.post(
@@ -23,20 +37,39 @@ def chat(request, params: ChatQueryParams):
 
     chat_history_service.add_history(session_id, content=query, message_type=ChatMessageEnum.human)
 
-    # condense question
-    condensed_query = chat_service.get_condensed_query(query)
-
-    # retrieve docs
-    search_response_schemas = retrieval_service.search(condensed_query)
-
     # retrieve history
     if not session_id:
         session = retrieval_service.create_session()
         session_id = session.id
     chat_messages = retrieval_service.get_chat_messages(session_id)
 
+    # result = {}
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    #     # Start the load operations and mark each future with its URL
+    #     future_to_num = {
+    #         executor.submit(test, chat_service, retrieval_service, query, chat_messages): 1,
+    #         executor.submit(chat_service.generate_recommend_queries, query): 2
+    #     }
+    #     for future in concurrent.futures.as_completed(future_to_num):
+    #         num = future_to_num[future]
+    #
+    #         result[num] = future.result()
+    #
+    # response = result[1][0]
+    # search_response_schemas = result[1][1]
+    # recommend_queries = result[2]
+    # print(f"Time: {time.time() - a}")
+
+    # condense question
+    condensed_query = chat_service.get_condensed_query(query)
+
+    # retrieve docs
+    search_response_schemas = retrieval_service.search(condensed_query)
+
     # generate response
     response = chat_service.generate_response(query, search_response_schemas, chat_messages)
+
+    # recommend queries
     recommend_queries = chat_service.generate_recommend_queries(query)
 
     chat_history_response = chat_history_service.add_history(
