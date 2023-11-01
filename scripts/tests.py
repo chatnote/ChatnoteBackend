@@ -1,4 +1,7 @@
+from langchain.document_loaders import NotionDBLoader
+
 from sources.enums import DataSourceEnum
+from sources.loaders.notion import NotionLoader
 
 
 def test_splitter():
@@ -28,8 +31,31 @@ def test_splitter():
     print(response)
 
 
+def notion_loader():
+    from llama_index import download_loader
+    import os
+
+    NotionPageReader = download_loader('NotionPageReader')
+
+    integration_token = "secret_qbmtFSaUeYowlQhwkvypQM38jb5CO2UDurCKRaPta3a"
+    page_ids = ["881433f7-5891-47c6-9563-6a052c6f4173"]
+    reader = NotionPageReader(integration_token=integration_token)
+    documents = reader.load_data(page_ids=page_ids)
+    print(documents)
+
+
+def notion_test():
+    from users.models import User
+    user = User.objects.get(email="ddr04014@gmail.com")
+    notion_loader = NotionLoader(user)
+    pages = notion_loader.get_all_page()
+    print(len(pages))
+    notion_document_schemas = NotionLoader(user).overall_process(pages)
+    print(len(notion_document_schemas))
+
+
 if __name__ == "__main__":
     import django
 
     django.setup()
-    test_splitter()
+    notion_test()

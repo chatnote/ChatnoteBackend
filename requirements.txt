@@ -48,7 +48,7 @@ click==8.1.7
     #   cfn-flip
     #   kappa
     #   pip-tools
-dataclasses-json==0.6.1
+dataclasses-json==0.5.14
     # via langchain
 django==4.2.3
     # via

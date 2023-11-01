@@ -59,7 +59,8 @@ def google_callback(request, code: str, redirect_url: str):
     path="login/apple/callback/",
     auth=None,
     response={200: SignUpResponse},
-    tags=[ApiTagEnum.user]
+    tags=[ApiTagEnum.user],
+    deprecated=True
 )
 def signup_apple(request, code: str, redirect_url: str):
     access_token = AppleLoginService.get_token(code, redirect_url)
