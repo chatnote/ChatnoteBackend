@@ -34,10 +34,6 @@ def chat(request, params: ChatQueryParams):
     condensed_query = chat_service.get_condensed_query(query, [])
     is_private = chat_service.is_private_of_query(query, [])
 
-    print(f"chat_messages: {chat_messages}")
-    print(f"condensed query: {condensed_query}")
-    print(f"is private: {is_private}")
-
     if is_private:
         # retrieve docs
         search_response_schemas = retrieval_service.search(condensed_query)
@@ -46,7 +42,8 @@ def chat(request, params: ChatQueryParams):
         response = chat_service.generate_response_with_context(query, search_response_schemas, [])
     else:
         # generate response
-        response = chat_service.generate_response(query, [])
+        response = "주어진 질문과 관련된 문서를 찾을 수 없습니다."
+        # response = chat_service.generate_response(query, [])
 
     # recommend queries
     recommend_queries = chat_service.generate_recommend_queries(query)
