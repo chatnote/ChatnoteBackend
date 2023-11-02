@@ -13,7 +13,9 @@ from langchain.schema import AIMessage, StrOutputParser, HumanMessage, SystemMes
 
 from chats.enums import ChatMessageEnum
 from chats.models import ChatHistory, ChatSession
-from chats.prompts import SUGGESTED_QUESTIONS_AFTER_ANSWER_INSTRUCTION_PROMPT, CONDENSED_QUERY_PROMPT, CHAT_GENERATE_SYSTEM_PROMPT
+from chats.prompts import SUGGESTED_QUESTIONS_AFTER_ANSWER_INSTRUCTION_PROMPT, CONDENSED_QUERY_PROMPT_v1, \
+    CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT, IS_PRIVATE_PROMPT, CHAT_GENERATE_SYSTEM_PROMPT, \
+    ABLE_TO_KNOW_INTENT_QUERY_PROMPT, CONDENSED_QUERY_PROMPT_v2
 from chats.schemas import SearchResponseSchema
 from cores.elastics.clients import ChunkedContextClient
 from cores.utils import print_token_summary, print_execution_time
@@ -37,31 +39,72 @@ class ChatService:
 
     @print_token_summary
     @print_execution_time
-    def get_condensed_query(self, query):
-        prompt = ChatPromptTemplate.from_messages([
-            ("human", CONDENSED_QUERY_PROMPT)
-        ])
+    def get_condensed_query(self, query, chat_messages=None):
+        # prompt = ChatPromptTemplate.from_messages([
+        #     ("human", CONDENSED_QUERY_PROMPT_v2)
+        # ])
+        #
+        # runnable = prompt | self.model_gpt35_turbo | StrOutputParser()
+        # return runnable.invoke({"query": query})
 
-        runnable = prompt | self.model_gpt35_turbo | StrOutputParser()
-        return runnable.invoke({"query": query})
+        chat_messages.append(HumanMessage(content=CONDENSED_QUERY_PROMPT_v2.format(query=query)))
+        runnable = self.model_gpt35_turbo | StrOutputParser()
+        return runnable.invoke(chat_messages)
+
+    def is_intentional_of_query(self, query, chat_messages):
+        chat_messages.insert(0, SystemMessage(content=ABLE_TO_KNOW_INTENT_QUERY_PROMPT))
+        chat_messages.append(HumanMessage(content=query))
+
+        runnable = self.model_gpt35_turbo | StrOutputParser()
+        intentional = runnable.invoke(chat_messages)
+        if intentional == "known":
+            return True
+        else:
+            return False
+
+    @print_token_summary
+    @print_execution_time
+    def is_private_of_query(self, query, chat_messages):
+        # prompt = ChatPromptTemplate.from_messages([
+        #     ("human", IS_PRIVATE_PROMPT)
+        # ])
+        #
+        # runnable = prompt | self.model_gpt35_turbo | StrOutputParser()
+        # result = runnable.invoke({"query": query})
+
+        chat_messages.append(HumanMessage(content=IS_PRIVATE_PROMPT.format(query=query)))
+        runnable = self.model_gpt35_turbo | StrOutputParser()
+        result = runnable.invoke(chat_messages)
+        if result == "private":
+            return True
+        else:
+            return False
 
     @classmethod
-    def _get_context_from_search(cls, search_response_schemas: List[SearchResponseSchema]) -> str:
+    def _get_original_context_from_search(cls, search_response_schemas: List[SearchResponseSchema]) -> str:
         result = ""
         for i, search_response in enumerate(search_response_schemas):
             result += f"<doc id={i}>{search_response.original_text}</doc>\n"
         result = f"<context>\n{result}</context>"
         return result
 
+    @classmethod
+    def _get_chunked_context_from_search(cls, search_response_schemas: List[SearchResponseSchema]) -> str:
+        result = ""
+        for i, search_response in enumerate(search_response_schemas):
+            result += f"<doc id={i}>{search_response.chunked_text}</doc>\n"
+        result = f"<context>\n{result}</context>"
+        return result
+
     @staticmethod
-    def is_valid_token_limit(messages):
+    def is_valid_token_limit(messages, counts: int):
         total_content = ""
         for message in messages:
             total_content += message.content
 
         total_tokens = get_num_tokens_from_text(total_content)
         print(f"total num tokens: {total_tokens}")
-        if total_tokens > 3700:
+        if total_tokens > counts:
             # raise CustomException(error_code="invalid_token_num_limit")
             return False
         else:
@@ -69,18 +112,37 @@ class ChatService:
 
     @print_token_summary
     @print_execution_time
-    def generate_response(self, query, search_response_schemas, chat_messages) -> str:
-        context = self._get_context_from_search(search_response_schemas)
-        chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_SYSTEM_PROMPT.format(context=context)))
-        chat_messages.append(HumanMessage(content=query))
+    def generate_response_with_context(self, query, search_response_schemas, chat_messages) -> str:
+        new_chat_messages = chat_messages
+        original_context = self._get_original_context_from_search(search_response_schemas)
+        new_chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT.format(context=original_context)))
+        new_chat_messages.append(HumanMessage(content=query))
 
-        is_valid = self.is_valid_token_limit(chat_messages)
-        if is_valid:
+        is_valid_3700 = self.is_valid_token_limit(new_chat_messages, 3700)
+        if is_valid_3700:
             runnable = self.model_gpt35_turbo | StrOutputParser()
-            return runnable.invoke(chat_messages)
-        else:
+            return runnable.invoke(new_chat_messages)
+
+        is_valid_15000 = self.is_valid_token_limit(new_chat_messages, 15000)
+        if is_valid_15000:
             runnable = self.model_gpt35_turbo_16k | StrOutputParser()
-            return runnable.invoke(chat_messages)
+            return runnable.invoke(new_chat_messages)
+        else:
+            new_chat_messages = chat_messages
+            chunked_context = self._get_chunked_context_from_search(search_response_schemas)
+            new_chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT.format(context=chunked_context)))
+            new_chat_messages.append(HumanMessage(content=query))
+
+            runnable = self.model_gpt35_turbo | StrOutputParser()
+            return runnable.invoke(new_chat_messages)
+
+    @print_token_summary
+    @print_execution_time
+    def generate_response(self, query, chat_messages) -> str:
+        chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_SYSTEM_PROMPT))
+        chat_messages.append(HumanMessage(content=query))
+        runnable = self.model_gpt35_turbo | StrOutputParser()
+        return runnable.invoke(chat_messages)
 
     @print_execution_time
     def generate_recommend_queries(self, query: str) -> List[str]:
