@@ -5,7 +5,6 @@ from django.db import transaction
 from django.utils.functional import cached_property
 
 from sources.constants import PAGE_LIMIT
-from sources.loaders.notion import NotionLoader
 from sources.models import DataSyncStatus, NotionPage
 
 from typing import List
@@ -13,7 +12,7 @@ from typing import List
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from cores.elastics.clients import ChunkedContextClient
+from cores.elastics.clients import ChunkedContextClient, OriginalContextClient
 from sources.schemas import OriginalDocumentSchema, NotionPageSchema
 from sources.enums import DataSourceEnum
 from sources.models import OriginalDocument
@@ -60,6 +59,7 @@ class NotionValidator:
 class NotionService:
     def __init__(self, user):
         self.user = user
+        self.original_client = OriginalContextClient()
         self.chunked_client = ChunkedContextClient()
 
     @staticmethod
@@ -93,7 +93,8 @@ class NotionService:
         OriginalDocument.objects.bulk_create(original_document_qs_list)
 
         original_document_schemas = self._notion_page_schemas_2_original_document_schemas(notion_page_schemas)
-        self.create_chunked_documents(original_document_schemas)
+        self.create_original_contexts(original_document_schemas)
+        self.create_chunked_contexts(original_document_schemas)
 
         notion_page_qs_list = [
             NotionPage(
@@ -116,7 +117,8 @@ class NotionService:
         OriginalDocument.objects.bulk_update(notion_document_qs, ["title", "text", "text_hash"])
 
         original_document_schemas = self._notion_page_schemas_2_original_document_schemas(notion_page_schemas)
-        self.update_chunked_documents(original_document_schemas)
+        self.update_original_contexts(original_document_schemas)
+        self.update_chunked_contexts(original_document_schemas)
 
         notion_page_for_update_qs = self.user.notionpage_set.filter(url=url_2_notion_page_schema.keys()).all()
         for notion_page in notion_page_for_update_qs:
@@ -127,24 +129,36 @@ class NotionService:
 
     def delete_documents(self, document_urls: List[str]):
         self.user.originaldocument_set.filter(url__in=document_urls).all().delete()
+        self.original_client.delete_documents(self.user, document_urls)
         self.chunked_client.delete_documents(self.user, document_urls)
         self.user.notionpage_set.filter(url__in=document_urls).all().delete()
 
     def delete_all_documents(self):
         self.user.originaldocument_set.all().delete()
         self.user.notionpage_set.all().delete()
+        self.original_client.delete_documents(self.user)
         self.chunked_client.delete_documents(self.user)
 
-    def create_chunked_documents(self, notion_document_schemas: List[OriginalDocumentSchema]):
-        chunked_documents = NotionSplitter.split(notion_document_schemas)
+    def create_chunked_contexts(self, original_document_schemas: List[OriginalDocumentSchema]):
+        original_document_schemas = [item for item in original_document_schemas if item.text]
+        chunked_documents = NotionSplitter.split(original_document_schemas)
 
         self.chunked_client.create_documents(chunked_documents)
 
-    def update_chunked_documents(self, notion_document_schemas: List[OriginalDocumentSchema]):
-        document_urls = [document.url for document in notion_document_schemas]
+    def update_chunked_contexts(self, original_document_schemas: List[OriginalDocumentSchema]):
+        document_urls = [document.url for document in original_document_schemas]
         if document_urls:
             self.chunked_client.delete_documents(self.user, document_urls)
-        self.create_chunked_documents(notion_document_schemas)
+        self.create_chunked_contexts(original_document_schemas)
+
+    def create_original_contexts(self, original_document_schemas: List[OriginalDocumentSchema]):
+        self.original_client.bulk_create(original_document_schemas)
+
+    def update_original_contexts(self, original_document_schemas: List[OriginalDocumentSchema]):
+        document_urls = [document.url for document in original_document_schemas]
+        if document_urls:
+            self.original_client.delete_documents(self.user, document_urls)
+        self.create_original_contexts(original_document_schemas)
 
 
 class NotionSync:
@@ -154,6 +168,7 @@ class NotionSync:
         self.notion_document_service = NotionService(self.user)
         self.new_document_urls = [notion_document.url for notion_document in notion_page_schemas]
         self.new_text_hashes = [notion_document.text_hash for notion_document in notion_page_schemas]
+        self.original_client = OriginalContextClient()
         self.chunked_client = ChunkedContextClient()
 
     def overall_process(self, total_page_urls):

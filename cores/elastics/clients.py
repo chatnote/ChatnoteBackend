@@ -1,20 +1,19 @@
 from typing import List
 
 from django.conf import settings
+from elasticsearch import Elasticsearch, helpers
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain.vectorstores import ElasticsearchStore
 
 from cores.elastics.mappings import original_index_mappings, chunk_index_mappings
-from cores.schemas import OriginalContext
 
 
 class OriginalContextClient:
     def __init__(self):
-        self.search_client = ElasticsearchStore.connect_to_elasticsearch(
+        self.search_client = Elasticsearch(
             cloud_id=settings.ES_CLOUD_ID,
-            username=settings.ES_USER,
-            password=settings.ES_PASSWORD
+            basic_auth=(settings.ES_USER, settings.ES_PASSWORD)
         )
         self.index = settings.ORIGINAL_DOCUMENT_INDEX
 
@@ -28,7 +27,18 @@ class OriginalContextClient:
     def delete_index(self):
         self.search_client.indices.delete(index=self.index)
 
-    def add_documents(self, original_contexts: List[OriginalContext]):
+    def bulk_create(self, original_contexts):
+        results = []
+        for original_context in original_contexts:
+            results.append(
+                {
+                    "_index": self.index,
+                    "_source": original_context.dict()
+                }
+            )
+        helpers.bulk(self.search_client, results)
+
+    def add_documents(self, original_contexts):
         for context in original_contexts:
             self.search_client.index(
                 index=settings.ORIGINAL_DOCUMENT_INDEX,
@@ -36,20 +46,77 @@ class OriginalContextClient:
                 document=context.dict()
             )
 
-    def delete_all_documents(self, user):
-        delete_query = {
-            "query": {
-                "match": {
+    def delete_documents(self, user, document_urls=None):
+        if document_urls:
+            query = {
+                "bool": {
+                    "filter": [
+                        {
+                            "match": {
+                                "user_id": user.id
+                            }
+                        },
+                        {
+                            "terms": {
+                                "url": document_urls
+                            }
+                        }
+                    ]
+                }
+            }
+        else:
+            query = {
+                "term": {
                     "user_id": user.id
                 }
             }
+
+        return self.search_client.delete_by_query(
+            index=self.index,
+            query=query
+        )
+
+    def search(self, query: str, user_id: int):
+        query = {
+            "bool": {
+                "must": [
+                    {
+                        "match": {
+                            "text": query
+                        }
+                    }
+                ],
+                "should": [
+                    {
+                        "match": {
+                            "title": query
+                        }
+                    },
+                    {
+                        "match_phrase": {
+                            "text": query
+                        }
+                    }
+                ],
+                "filter": {
+                    "term": {"user_id": user_id}
+                }
+            }
         }
-        self.search_client.delete_by_query(index=self.index, body=delete_query)
+        response = self.search_client.search(
+            index=self.index,
+            query=query,
+            sort=["_score"]
+        ).body
+
+        hits = response['hits']
+        if hits:
+            return [item["_source"] for item in hits['hits']]
 
     def refresh_index(self):
         self.search_client.indices.refresh(index=self.index)
 
-    def search_by_ids(self, document_ids: List[str]) -> List[OriginalContext]:
+    def search_by_ids(self, document_ids: List[str]):
         response = self.search_client.search(
             index=self.index,
             query={
@@ -65,8 +132,6 @@ class OriginalContextClient:
         )
 
         original_contexts = []
-        for item in response.body['hits']['hits']:
-            original_contexts.append(OriginalContext.from_dict(item['_source']))
         return original_contexts
 
     def get_document_ids(self, user):

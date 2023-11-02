@@ -47,6 +47,8 @@ class OriginalDocumentSchema(Schema):
     title: str
     text: str
     text_hash: str  # original text parsing 로직을 바꾸면 hash 값 업데이트
+    created_at: datetime | None
+    updated_at: datetime | None
 
     @classmethod
     def from_dict(cls, item: dict):
@@ -64,6 +66,7 @@ class NotionPageSchema(Schema):
     url: str
     page_id: str
     title: str
+    description: str | None
     text: str | None
     text_hash: str | None  # original text parsing 로직을 바꾸면 hash 값 업데이트
     icon: str

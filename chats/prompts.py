@@ -1,6 +1,7 @@
 SUGGESTED_QUESTIONS_AFTER_ANSWER_INSTRUCTION_PROMPT = """Please help me predict the three most likely questions in instructional tone that human would ask, and keeping each question under 100 characters.
-input question: {query}
 MAKE SURE your output is the SAME language as the input question!
+
+input question: {query}
 {format_instructions}
 """
 
@@ -22,9 +23,11 @@ Generate a comprehensive and informative answer of 80 words or less for the give
 
 You should use bullet points in your answer for readability.
 
-If there is nothing in the context relevant to the question at hand, just say "죄송하지만, 제가 현재 가지고 있는 정보로 질문에 대한 답을 할 수 없습니다." Don't try to make up an answer.
+If there is nothing in the context relevant to the question at hand, just say "I can't answer your question with the information I currently have." Don't try to make up an answer.
 
 Anything between the following `context` html blocks is retrieved from a knowledge bank, not part of the conversation with the user.
+
+MAKE SURE your output is the SAME language as the input question!
 
 {context}
 """

@@ -146,7 +146,7 @@ class NotionLoader:
         is_workspace = self.is_workspace_page(page)
 
         raw_content = ""
-        blocks = self.process_blocks(page)
+        blocks = self.get_blocks(page)
         for block in blocks["results"]:
             block_type = block.get("type")
             if not block_type or block_type not in self.supported_block_types:
@@ -169,20 +169,13 @@ class NotionLoader:
                     raw_content += nested_content
 
         if title or description or raw_content:
-            text = ""
-            if title:
-                text += f"{title}\n"
-            if description:
-                text += f"{description}\n"
-            if raw_content:
-                text += f"{raw_content}"
-
             return NotionPageSchema(
                 url=page["url"],
                 page_id=page_id,
                 title=title,
-                text=text,
-                text_hash=get_hash(text),
+                description=description,
+                text=raw_content,
+                text_hash=get_hash(raw_content),
                 icon=icon,
                 is_workspace=is_workspace
             )
@@ -213,7 +206,7 @@ class NotionLoader:
                 return rich_text["plain_text"]
         return ""
 
-    def process_blocks(self, page):
+    def get_blocks(self, page):
         page_id = self.get_id(page)
         url = self.get_url(page)
         # page의 child block 구할 때와 block의 child block 을 구할 때, 같은 API를 사용한다
@@ -277,6 +270,12 @@ class NotionLoader:
                     raw_content += nested_content
         return raw_content
 
+    def get_page(self, page_id: str):
+        response = self.session.get(
+            f"https://api.notion.com/v1/pages/{page_id}"
+        ).json()
+        return response
+
     @staticmethod
     def get_page_title(page: dict):
         properties = page["properties"]
@@ -306,9 +305,15 @@ class NotionLoader:
         properties = page["properties"]
 
         for k, v in properties.items():
+            plain_text = ""
             if v['type'] == 'rich_text':
                 for rich_text_data in v['rich_text']:
-                    plain_text = rich_text_data['plain_text']
+                    plain_text += rich_text_data['plain_text']
+            elif v['type'] == 'multi_select':
+                for multi_select_data in v['multi_select']:
+                    plain_text += f"{multi_select_data['name']}, "
+
+            if plain_text:
                 description += f"{k}: {plain_text}\n"
         if description:
             description = description[:-1]  # delete last \n

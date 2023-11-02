@@ -1,21 +1,28 @@
 original_index_mappings = {
     "properties": {
-        "content_type": {
-            "type": "text",
+        "title": {
+            "type": "text"
         },
         "text": {
             "type": "text",
         },
         "text_hash": {
-            "type": "text",
+            "type": "keyword"
         },
-        "title": {
-            "type": "text",
+        "content_type": {
+            "type": "keyword"
+        },
+        "url": {
+            "type": "keyword"
         },
         "user_id": {
             "type": "long"
         },
-        "timestamp": {
+        "created_at": {
+            "type": "date",
+            "format": "epoch_millis"
+        },
+        "updated_at": {
             "type": "date",
             "format": "epoch_millis"
         }
