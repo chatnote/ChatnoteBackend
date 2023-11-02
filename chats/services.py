@@ -15,7 +15,7 @@ from chats.enums import ChatMessageEnum
 from chats.models import ChatHistory, ChatSession
 from chats.prompts import SUGGESTED_QUESTIONS_AFTER_ANSWER_INSTRUCTION_PROMPT, CONDENSED_QUERY_PROMPT_v1, \
     CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT, IS_PRIVATE_PROMPT, CHAT_GENERATE_SYSTEM_PROMPT, \
-    ABLE_TO_KNOW_INTENT_QUERY_PROMPT, CONDENSED_QUERY_PROMPT_v2
+    ABLE_TO_KNOW_INTENT_QUERY_PROMPT, CONDENSED_QUERY_PROMPT_v2, CHAT_GENERATE_WITH_NO_CONTEXT_SYSTEM_PROMPT
 from chats.schemas import SearchResponseSchema
 from cores.elastics.clients import ChunkedContextClient
 from cores.utils import print_token_summary, print_execution_time
@@ -115,6 +115,12 @@ class ChatService:
     def generate_response_with_context(self, query, search_response_schemas, chat_messages) -> str:
         new_chat_messages = chat_messages
         original_context = self._get_original_context_from_search(search_response_schemas)
+
+        if not search_response_schemas:
+            new_chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_WITH_NO_CONTEXT_SYSTEM_PROMPT.format(context=original_context)))
+            runnable = self.model_gpt35_turbo | StrOutputParser()
+            return runnable.invoke(new_chat_messages)
+
         new_chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT.format(context=original_context)))
         new_chat_messages.append(HumanMessage(content=query))
 
@@ -130,7 +136,7 @@ class ChatService:
         else:
             new_chat_messages = chat_messages
             chunked_context = self._get_chunked_context_from_search(search_response_schemas)
-            new_chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT.format(context=chunked_context)))
+            new_chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT.format(context=chunked_context, query=query)))
             new_chat_messages.append(HumanMessage(content=query))
 
             runnable = self.model_gpt35_turbo | StrOutputParser()

@@ -250,5 +250,4 @@ class ChunkedContextClient:
             filter=[{"match": {"metadata.user_id": str(user_id)}}],
             k=4
         )
-
-        return [doc for doc, score in results if score > 0.9]
+        return [doc for doc, score in results if score > 0.91]

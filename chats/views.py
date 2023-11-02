@@ -33,10 +33,11 @@ def chat(request, params: ChatQueryParams):
 
     condensed_query = chat_service.get_condensed_query(query, [])
     is_private = chat_service.is_private_of_query(query, [])
+    search_response_schemas = retrieval_service.search(condensed_query)
 
-    if is_private:
+    if search_response_schemas:
         # retrieve docs
-        search_response_schemas = retrieval_service.search(condensed_query)
+        # search_response_schemas = retrieval_service.search(condensed_query)
 
         # generate response
         response = chat_service.generate_response_with_context(query, search_response_schemas, [])
