@@ -32,7 +32,7 @@ def chat(request, params: ChatQueryParams):
     search_response_schemas = []
 
     condensed_query = chat_service.get_condensed_query(query, [])
-    is_private = chat_service.is_private_of_query(query, [])
+    # is_private = chat_service.is_private_of_query(query, [])
     search_response_schemas = retrieval_service.search(condensed_query)
 
     if search_response_schemas:
