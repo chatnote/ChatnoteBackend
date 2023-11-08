@@ -2,7 +2,7 @@ from datetime import datetime
 
 from django.shortcuts import render
 
-from cores.apis import api
+from cores.apis import api, api_v2
 from cores.auths import CustomJwtTokenAuth, GlobalAuth
 from cores.enums import ApiTagEnum
 from users.enums import SignupEnum
@@ -17,12 +17,21 @@ from users.services import GoogleLoginService, AppleLoginService
     response={200: UserSchema},
     tags=[ApiTagEnum.user]
 )
+@api_v2.get(
+    path="user/",
+    response={200: UserSchema},
+    tags=[ApiTagEnum.user]
+)
 def get_user(request):
     user = request.user
     return UserSchema.from_instance(user)
 
 
 @api.post(
+    path="user/delete/",
+    tags=[ApiTagEnum.user]
+)
+@api_v2.post(
     path="user/delete/",
     tags=[ApiTagEnum.user]
 )
@@ -37,6 +46,12 @@ def delete_user(request):
 
 
 @api.get(
+    path="login/google/callback/",
+    auth=None,
+    response={200: SignUpResponse},
+    tags=[ApiTagEnum.user]
+)
+@api_v2.get(
     path="login/google/callback/",
     auth=None,
     response={200: SignUpResponse},

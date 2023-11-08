@@ -4,11 +4,16 @@ import time
 from chats.enums import ChatMessageEnum
 from chats.schemas import ChatQueryParams, ChatReferenceSchema, ChatResponseDTO, ChatEvalParams
 from chats.services import RetrievalService, ChatHistoryService, ChatService
-from cores.apis import api, test_api
+from cores.apis import api, test_api, api_v2
 from cores.enums import ApiTagEnum
 
 
 @api.post(
+    path="chat/",
+    response={200: ChatResponseDTO},
+    tags=[ApiTagEnum.chat],
+)
+@api_v2.post(
     path="chat/",
     response={200: ChatResponseDTO},
     tags=[ApiTagEnum.chat],
@@ -73,6 +78,11 @@ def chat(request, params: ChatQueryParams):
     response={200: None},
     tags=[ApiTagEnum.chat]
 )
+@api_v2.post(
+    path="chat/eval/good/",
+    response={200: None},
+    tags=[ApiTagEnum.chat]
+)
 def chat_eval_good(request, params: ChatEvalParams):
     user = request.user
     chat_history = user.chathistory_set.get(id=params.chat_history_id)
@@ -82,6 +92,11 @@ def chat_eval_good(request, params: ChatEvalParams):
 
 
 @api.post(
+    path="chat/eval/bad/",
+    response={200: None},
+    tags=[ApiTagEnum.chat]
+)
+@api_v2.post(
     path="chat/eval/bad/",
     response={200: None},
     tags=[ApiTagEnum.chat]

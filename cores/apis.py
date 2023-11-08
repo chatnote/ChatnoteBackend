@@ -19,6 +19,13 @@ api = NinjaAPI(
     docs_url="/docs"
 )
 
+api_v2 = NinjaAPI(
+    version="2.0.0",
+    parser=ORJSONParser(),
+    auth=GlobalAuth(),
+    docs_url="/docs"
+)
+
 test_api = NinjaAPI(
     version='1.0.0.test',
     parser=ORJSONParser(),

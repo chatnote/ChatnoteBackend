@@ -4,7 +4,7 @@ from typing import List
 import requests
 from django.conf import settings
 
-from cores.apis import api
+from cores.apis import api, api_v2
 from cores.elastics.clients import ChunkedContextClient
 from cores.enums import ApiTagEnum
 from cores.exception import CustomException
@@ -21,7 +21,35 @@ from sources.services import NotionSyncStatusService
 from sources.tasks import sync_notion_task
 
 
+@api_v2.get(
+    path="source/",
+    tags=[ApiTagEnum.source]
+)
+def all_sources(request):
+    pass
+
+
+@api_v2.get(
+    path="source/my_integration/",
+    tags=[ApiTagEnum.source]
+)
+def my_integrations(request):
+    pass
+
+
+@api_v2.post(
+    path="source/upvote/",
+    tags=[ApiTagEnum.source]
+)
+def integration_upvote(request):
+    pass
+
+
 @api.get(
+    path="source/notion/callback/",
+    tags=[ApiTagEnum.source]
+)
+@api_v2.get(
     path="source/notion/callback/",
     tags=[ApiTagEnum.source]
 )
@@ -50,6 +78,11 @@ def notion_callback(request, code: str, redirect_url: str):
 
 
 @api.post(
+    path="source/notion/sync/",
+    response={200: None, 400: NotionValidErrorDTO},
+    tags=[ApiTagEnum.source]
+)
+@api_v2.post(
     path="source/notion/sync/",
     response={200: None, 400: NotionValidErrorDTO},
     tags=[ApiTagEnum.source]
@@ -86,6 +119,10 @@ def sync_notion(request):
 
 
 @api.post(
+    path="source/notion/delete/",
+    tags=[ApiTagEnum.source]
+)
+@api_v2.post(
     path="source/notion/delete/",
     tags=[ApiTagEnum.source]
 )
