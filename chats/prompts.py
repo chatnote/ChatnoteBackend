@@ -5,13 +5,6 @@ input question: {query}
 {format_instructions}
 """
 
-CONDENSED_QUERY_PROMPT_WITH_HISTORY = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
-
-Chat History:
-{chat_history}
-Follow Up Input: {query}
-Standalone Question:"""
-
 ABLE_TO_KNOW_INTENT_QUERY_PROMPT = """Please categorize the intent of this question as either "unknown" or "known". If you have no idea what the intent of this question is, return "unknown", , otherwise return "known"."""
 
 IS_PRIVATE_PROMPT = """Please categorize the intent of this question as either "private" or "public". If you need to access to specific documents or the ability to search for files on your computer or in your organization's systems to answer this question, return "private", otherwise return "public".
@@ -19,17 +12,13 @@ IS_PRIVATE_PROMPT = """Please categorize the intent of this question as either "
 Input Question: {query}
 """
 
-CONDENSED_QUERY_PROMPT_v1 = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
+CONDENSED_QUERY_PROMPT_v1 = """Given the following conversation and a follow up human question, rephrase the follow up human question to be a standalone question.
+MAKE SURE standalone question is the SAME language as the input question!
+
 Conversation: {conversation}
-Follow Up Question: {query}
-Standalone Question:
-"""
+Follow Up Human Question: {query}
+Standalone Question:"""
 
-CONDENSED_QUERY_PROMPT_v2 = """Given the following conversation and a follow up question, pick out two or three keywords from the follow up question.
-
-Follow Up Question: {query}
-Main Keywords:
-"""
 
 CHAT_GENERATE_WITH_NO_CONTEXT_SYSTEM_PROMPT = """You are an personal ai assistant only for me, primarily based on my personal information.
 Just say "I can't answer your question with the information I currently have.".

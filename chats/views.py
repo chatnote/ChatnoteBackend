@@ -28,6 +28,7 @@ def chat(request, params: ChatQueryParams):
     chat_messages = retrieval_service.get_chat_messages(session_id)
 
     condensed_query = chat_service.get_condensed_query(query, chat_messages)
+    print("condensed_query", condensed_query)
     search_response_schemas = retrieval_service.search(condensed_query)
 
     if search_response_schemas:

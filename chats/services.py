@@ -15,7 +15,7 @@ from chats.enums import ChatMessageEnum
 from chats.models import ChatHistory, ChatSession
 from chats.prompts import SUGGESTED_QUESTIONS_AFTER_ANSWER_INSTRUCTION_PROMPT, CONDENSED_QUERY_PROMPT_v1, \
     CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT, IS_PRIVATE_PROMPT, CHAT_GENERATE_SYSTEM_PROMPT, \
-    ABLE_TO_KNOW_INTENT_QUERY_PROMPT, CONDENSED_QUERY_PROMPT_v2, CHAT_GENERATE_WITH_NO_CONTEXT_SYSTEM_PROMPT
+    ABLE_TO_KNOW_INTENT_QUERY_PROMPT, CHAT_GENERATE_WITH_NO_CONTEXT_SYSTEM_PROMPT
 from chats.schemas import SearchResponseSchema
 from cores.elastics.clients import ChunkedContextClient
 from cores.utils import print_token_summary, print_execution_time
@@ -43,7 +43,6 @@ class ChatService:
         prompt = ChatPromptTemplate.from_messages([
             ("human", CONDENSED_QUERY_PROMPT_v1),
         ])
-        print(prompt)
         runnable = prompt | self.model_gpt35_turbo | StrOutputParser()
         return runnable.invoke({"query": query, "conversation": chat_messages})
 
