@@ -239,7 +239,10 @@ class NotionLoader:
             else:
                 start_cursor = response["next_cursor"]
 
-        response['results'] = results
+        if "results" in response.keys():
+            response['results'] = results
+        else:
+            response = {"results": []}
 
         return response
 

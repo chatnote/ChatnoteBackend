@@ -21,34 +21,28 @@ def chat(request, params: ChatQueryParams):
     retrieval_service = RetrievalService(user=user)
     chat_history_service = ChatHistoryService(user=user)
 
-    chat_history_service.add_history(session_id, content=query, message_type=ChatMessageEnum.human)
-
     # retrieve history
     if not session_id:
         session = retrieval_service.create_session()
         session_id = session.id
     chat_messages = retrieval_service.get_chat_messages(session_id)
 
-    search_response_schemas = []
-
-    condensed_query = chat_service.get_condensed_query(query, [])
-    # is_private = chat_service.is_private_of_query(query, [])
+    condensed_query = chat_service.get_condensed_query(query, chat_messages)
     search_response_schemas = retrieval_service.search(condensed_query)
 
     if search_response_schemas:
-        # retrieve docs
-        # search_response_schemas = retrieval_service.search(condensed_query)
-
-        # generate response
-        response = chat_service.generate_response_with_context(query, search_response_schemas, [])
+        response = chat_service.generate_response_with_context(query, search_response_schemas, chat_messages)
     else:
-        # generate response
         response = "주어진 질문과 관련된 문서를 찾을 수 없습니다."
-        # response = chat_service.generate_response(query, [])
 
     # recommend queries
     recommend_queries = chat_service.generate_recommend_queries(query)
 
+    chat_history_service.add_history(
+        session_id=session_id,
+        content=query,
+        message_type=ChatMessageEnum.human
+    )
     chat_history_response = chat_history_service.add_history(
         session_id=session_id,
         content=response,

@@ -247,7 +247,7 @@ class ChunkedContextClient:
     def similarity_search(self, query: str, user_id: int) -> List[Document]:
         results = self.vector_client.similarity_search_with_score(
             query,
-            filter=[{"match": {"metadata.user_id": str(user_id)}}],
+            filter=[{"term": {"metadata.user_id": str(user_id)}}],
             k=4
         )
         return [doc for doc, score in results if score > 0.91]

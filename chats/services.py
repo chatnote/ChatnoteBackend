@@ -39,17 +39,13 @@ class ChatService:
 
     @print_token_summary
     @print_execution_time
-    def get_condensed_query(self, query, chat_messages=None):
-        # prompt = ChatPromptTemplate.from_messages([
-        #     ("human", CONDENSED_QUERY_PROMPT_v2)
-        # ])
-        #
-        # runnable = prompt | self.model_gpt35_turbo | StrOutputParser()
-        # return runnable.invoke({"query": query})
-
-        chat_messages.append(HumanMessage(content=CONDENSED_QUERY_PROMPT_v2.format(query=query)))
-        runnable = self.model_gpt35_turbo | StrOutputParser()
-        return runnable.invoke(chat_messages)
+    def get_condensed_query(self, query, chat_messages):
+        prompt = ChatPromptTemplate.from_messages([
+            ("human", CONDENSED_QUERY_PROMPT_v1),
+        ])
+        print(prompt)
+        runnable = prompt | self.model_gpt35_turbo | StrOutputParser()
+        return runnable.invoke({"query": query, "conversation": chat_messages})
 
     def is_intentional_of_query(self, query, chat_messages):
         chat_messages.insert(0, SystemMessage(content=ABLE_TO_KNOW_INTENT_QUERY_PROMPT))
@@ -113,34 +109,25 @@ class ChatService:
     @print_token_summary
     @print_execution_time
     def generate_response_with_context(self, query, search_response_schemas, chat_messages) -> str:
-        new_chat_messages = chat_messages
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT),
+            *chat_messages,
+            ("human", query)
+        ])
         original_context = self._get_original_context_from_search(search_response_schemas)
+        runnable = prompt | self.model_gpt35_turbo_16k | StrOutputParser()
 
-        if not search_response_schemas:
-            new_chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_WITH_NO_CONTEXT_SYSTEM_PROMPT.format(context=original_context)))
-            runnable = self.model_gpt35_turbo | StrOutputParser()
-            return runnable.invoke(new_chat_messages)
-
-        new_chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT.format(context=original_context)))
-        new_chat_messages.append(HumanMessage(content=query))
-
-        is_valid_3700 = self.is_valid_token_limit(new_chat_messages, 3700)
-        if is_valid_3700:
-            runnable = self.model_gpt35_turbo | StrOutputParser()
-            return runnable.invoke(new_chat_messages)
-
-        is_valid_15000 = self.is_valid_token_limit(new_chat_messages, 15000)
-        if is_valid_15000:
-            runnable = self.model_gpt35_turbo_16k | StrOutputParser()
-            return runnable.invoke(new_chat_messages)
-        else:
-            new_chat_messages = chat_messages
+        try:
+            return runnable.invoke({"context": original_context})
+        except openai.error.InvalidRequestError:
             chunked_context = self._get_chunked_context_from_search(search_response_schemas)
-            new_chat_messages.insert(0, SystemMessage(content=CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT.format(context=chunked_context, query=query)))
-            new_chat_messages.append(HumanMessage(content=query))
-
-            runnable = self.model_gpt35_turbo | StrOutputParser()
-            return runnable.invoke(new_chat_messages)
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", CHAT_GENERATE_WITH_CONTEXT_SYSTEM_PROMPT),
+                *chat_messages,
+                ("human", query)
+            ])
+            runnable = prompt | self.model_gpt35_turbo_16k | StrOutputParser()
+            return runnable.invoke({"context": chunked_context})
 
     @print_token_summary
     @print_execution_time
@@ -160,7 +147,6 @@ class ChatService:
         ])
 
         runnable = prompt | self.model_gpt35_turbo | output_parser
-
         return runnable.invoke({"query": query, "format_instructions": format_instructions})
 
 
@@ -206,15 +192,15 @@ class RetrievalService:
         session = ChatSession.objects.create(user=self.user)
         return session
 
-    def get_chat_messages(self, session_id) -> List[Union[HumanMessage, AIMessage]]:
+    def get_chat_messages(self, session_id) -> List[tuple]:
         messages = []
         chat_history_qs = self.user.chathistory_set.filter(session_id=session_id).order_by("created")
 
         for chat_history in chat_history_qs:
             if chat_history.message_type == ChatMessageEnum.human:
-                message = HumanMessage(content=chat_history.content)
+                message = ("human", chat_history.content)
             elif chat_history.message_type == ChatMessageEnum.ai:
-                message = AIMessage(content=chat_history.content)
+                message = ("ai", chat_history.content)
             else:
                 continue
             messages.append(message)

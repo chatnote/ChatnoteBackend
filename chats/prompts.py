@@ -20,9 +20,10 @@ Input Question: {query}
 """
 
 CONDENSED_QUERY_PROMPT_v1 = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
-
+Conversation: {conversation}
 Follow Up Question: {query}
-Standalone Question:"""
+Standalone Question:
+"""
 
 CONDENSED_QUERY_PROMPT_v2 = """Given the following conversation and a follow up question, pick out two or three keywords from the follow up question.
 
