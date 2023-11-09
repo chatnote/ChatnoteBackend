@@ -4,7 +4,8 @@ from django.conf import settings
 from django.db import transaction
 from django.utils.functional import cached_property
 
-from sources.constants import PAGE_LIMIT
+from chats.services import get_num_tokens_from_text
+from sources.constants import NOTION_PAGE_LIMIT
 from sources.models import DataSyncStatus, NotionPage
 
 from typing import List
@@ -22,8 +23,8 @@ class NotionSplitter:
     @classmethod
     def splitter_by_len(cls):
         return RecursiveCharacterTextSplitter(
-            chunk_size=300,
-            chunk_overlap=0,
+            chunk_size=200,
+            chunk_overlap=30,
             length_function=len,
         )
 
@@ -48,9 +49,7 @@ class NotionSplitter:
 class NotionValidator:
     @staticmethod
     def validate(user, pages: List[dict]):
-        # if user.email in settings.ACCESS_ALLOWED_EMAILS:
-        #     return True
-        if len(pages) <= PAGE_LIMIT:
+        if len(pages) <= NOTION_PAGE_LIMIT:
             return True
         else:
             return False
@@ -140,7 +139,7 @@ class NotionService:
         self.chunked_client.delete_documents(self.user)
 
     def create_chunked_contexts(self, original_document_schemas: List[OriginalDocumentSchema]):
-        original_document_schemas = [item for item in original_document_schemas if item.text]
+        original_document_schemas = [item for item in original_document_schemas if get_num_tokens_from_text(item.text) > 10]
         chunked_documents = NotionSplitter.split(original_document_schemas)
 
         self.chunked_client.create_documents(chunked_documents)
@@ -225,6 +224,7 @@ class NotionSyncStatusService:
     def __init__(self, user):
         self.user = user
 
+    @transaction.atomic
     def get_or_create_sync_status(self):
         try:
             sync_status = self.user.datasyncstatus_set.get(source=DataSourceEnum.notion)
@@ -241,12 +241,14 @@ class NotionSyncStatusService:
         sync_status.cur_page_count = sync_status.cur_page_count + count
         sync_status.save()
 
+    @transaction.atomic
     def to_running(self, count: int):
         sync_status = self.get_or_create_sync_status()
         sync_status.total_page_count = count
         sync_status.cur_page_count = 0
         sync_status.save()
 
+    @transaction.atomic
     def to_stop(self):
         sync_status = self.get_or_create_sync_status()
         sync_status.last_sync_datetime = datetime.now()

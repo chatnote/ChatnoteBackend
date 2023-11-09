@@ -3,7 +3,7 @@ from typing import List
 from ninja import Schema
 from pydantic.datetime_parse import datetime
 
-from sources.constants import PAGE_LIMIT
+from sources.constants import NOTION_PAGE_LIMIT
 from sources.enums import DataSourceEnum
 
 
@@ -30,7 +30,7 @@ class SyncStatusSchema(Schema):
             source=data_sync_status.source,
             total_page_count=data_sync_status.total_page_count,
             current_page_count=data_sync_status.cur_page_count,
-            limit_page_count=PAGE_LIMIT,
+            limit_page_count=NOTION_PAGE_LIMIT,
             is_running=data_sync_status.is_running,
             last_sync_datetime=data_sync_status.last_sync_datetime
         )
@@ -84,3 +84,58 @@ class NotionPageDTO(Schema):
     page_counts: int
     notion_page_schemas: List[NotionPagePayloadDTO]
     update_datetime: datetime | None
+
+
+class DataSourceDTO(Schema):
+    data_source: DataSourceEnum
+    icon: str
+    name: str
+    description: str
+    limit_description: str
+    is_available: bool
+    is_upvote: bool
+
+    @classmethod
+    def from_instances(cls, user, data_source_qs):
+        [
+            cls(
+                data_source=data_source.source,
+                icon=data_source.icon,
+                name=data_source.name,
+                description=data_source.description,
+                limit_description=cls.get_limit_description(data_source),
+                is_available=data_source.is_available,
+                is_upvote=True if user.upvotesource_set.filter(data_source__source=data_source.source) else False
+            )
+            for data_source in data_source_qs
+        ]
+
+    @classmethod
+    def get_limit_description(cls, data_source):
+        if data_source.source == DataSourceEnum.notion:
+            return f"{data_source.limit_count}페이지 연동 가능"
+
+
+class MyDataSourceDTO(Schema):
+    data_source_type: DataSourceEnum
+    icon: str
+    email: str
+    updated_count: int
+    limit_count: int
+    last_sync_datetime: datetime
+    is_running: bool
+
+    @classmethod
+    def from_instances(cls, integrated_data_source_qs):
+        return [
+            cls(
+                data_source_type=data.data_source.source,
+                icon=data.data_source.icon,
+                email=data.email,
+                updated_count=0,  # TODO - get page count
+                limit_count=data.data_source.limit_count,
+                last_sync_datetime=data.last_sync_datetime,
+                is_running=False  # TODO - get_is_running
+            )
+            for data in integrated_data_source_qs
+        ]

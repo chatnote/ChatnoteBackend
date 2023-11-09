@@ -27,8 +27,8 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def get_num_tokens_from_text(text: str, encoding_name: str = "cl100k_base") -> int:
     """Returns the number of tokens in a text string."""
-    encoding = tiktoken.get_encoding(encoding_name)
-    num_tokens = len(encoding.encode(text))
+    encoder = tiktoken.get_encoding(encoding_name)
+    num_tokens = len(encoder.encode(text))
     return num_tokens
 
 

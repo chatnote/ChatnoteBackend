@@ -9,12 +9,12 @@ from cores.elastics.clients import ChunkedContextClient
 from cores.enums import ApiTagEnum
 from cores.exception import CustomException
 from cores.utils import split_list_and_run
-from sources.constants import PAGE_LIMIT
+from sources.constants import NOTION_PAGE_LIMIT
 from sources.services import NotionService, NotionValidator
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
-from sources.exceptions import NotionValidErrorDTO, NotionValidPayloadSchema, NotionValidPageSchema
+from sources.exceptions import NotionValidErrorDTO
 from sources.loaders.notion import NotionLoader
-from sources.schemas import SyncStatusSchema, NotionPageDTO, NotionPagePayloadDTO
+from sources.schemas import SyncStatusSchema, NotionPageDTO, NotionPagePayloadDTO, MyDataSourceDTO, DataSourceDTO
 import base64
 
 from sources.services import NotionSyncStatusService
@@ -23,6 +23,7 @@ from sources.tasks import sync_notion_task
 
 @api_v2.get(
     path="source/",
+    response=[DataSourceDTO],
     tags=[ApiTagEnum.source]
 )
 def all_sources(request):
@@ -31,6 +32,7 @@ def all_sources(request):
 
 @api_v2.get(
     path="source/my_integration/",
+    response=[MyDataSourceDTO],
     tags=[ApiTagEnum.source]
 )
 def my_integrations(request):
@@ -41,7 +43,7 @@ def my_integrations(request):
     path="source/upvote/",
     tags=[ApiTagEnum.source]
 )
-def integration_upvote(request):
+def update_upvote(request):
     pass
 
 
@@ -96,26 +98,17 @@ def sync_notion(request):
     # page count save
     is_valid = NotionValidator.validate(user, pages)
     if not is_valid:
-        workspace_notion_page_schemas = [item for item in notion_loader.get_all_page_schemas(pages) if item.is_workspace]
         raise CustomException(
-            **NotionValidErrorDTO(
-                error_code=NotionValidErrorEnum.notion_page_limit,
-                payload=NotionValidPayloadSchema(
-                    page_limit_counts=PAGE_LIMIT,
-                    page_counts=len(pages),
-                    notion_page_schemas=[NotionValidPageSchema(
-                        title=notion_page.title,
-                        icon=notion_page.icon
-                    ) for notion_page in workspace_notion_page_schemas]
-                )
-            ).dict()
+            NotionValidErrorDTO(
+                error_code=NotionValidErrorEnum.notion_page_limit
+            )
         )
 
     if pages:
         NotionSyncStatusService(user).to_running(len(pages))
         total_page_urls = [page["url"] for page in pages]  # for delete
 
-        split_list_and_run(pages, 25, sync_notion_task, user.id, total_page_urls)
+        split_list_and_run(pages, 30, sync_notion_task, user.id, total_page_urls)
 
 
 @api.post(
@@ -142,13 +135,14 @@ def get_pages(request):
     workspace_notion_page_qs = user.notionpage_set.filter(is_workspace=True).order_by("-modified").all()
 
     return NotionPageDTO(
-        page_limit_counts=PAGE_LIMIT,
+        page_limit_counts=NOTION_PAGE_LIMIT,
         page_counts=page_counts,
         notion_page_schemas=[NotionPagePayloadDTO(
             title=item.title,
             icon=item.icon
         ) for item in workspace_notion_page_qs],
-        update_datetime=workspace_notion_page_qs.first().modified + timedelta(hours=9) if workspace_notion_page_qs else None
+        update_datetime=workspace_notion_page_qs.first().modified + timedelta(
+            hours=9) if workspace_notion_page_qs else None
     )
 
 

@@ -31,10 +31,6 @@ def get_user(request):
     path="user/delete/",
     tags=[ApiTagEnum.user]
 )
-@api_v2.post(
-    path="user/delete/",
-    tags=[ApiTagEnum.user]
-)
 def delete_user(request):
     user = request.user
     user.is_active = False

@@ -1,5 +1,6 @@
 import hashlib
 import logging
+from time import sleep
 from typing import List
 
 import requests
@@ -54,6 +55,27 @@ class RichTextEnum(CustomEnum):
 
 def get_hash(text: str) -> str:
     return hashlib.md5(bytes(text, encoding="utf-8")).hexdigest()
+
+
+class NotionUserLoader:
+    def __init__(self, user):
+        self.user = user
+
+    def get_email(self):
+        email = ""
+        response = requests.get(
+            url="https://api.notion.com/v1/users",
+            headers={
+                "Authorization": f"Bearer {self.user.notion_access_token}", "Notion-Version": "2022-06-28"
+            }
+        ).json()
+        if "results" in print(response):
+            for data in response["results"]:
+                if data["type"] == "person":
+                    email = data["person"]["email"]
+                    break
+
+        return email
 
 
 class NotionLoader:
@@ -123,16 +145,11 @@ class NotionLoader:
     def overall_process(self, pages=None):
         notion_page_schemas = []
 
-        if not pages:
-            pages = self.get_all_page()
-
         # Get all pages content
-        for i, page in enumerate(tqdm(pages)):
-            if page["object"] == "database":
-                # TODO: Handle databases
-                continue
-            elif page["object"] == "page":
+        for page in tqdm(pages):
+            if page["object"] == "page":
                 processed_page = self.process_page(page)
+                sleep(0.5)
                 if processed_page:
                     notion_page_schemas.append(processed_page)
 
@@ -146,25 +163,24 @@ class NotionLoader:
         is_workspace = self.is_workspace_page(page)
 
         raw_content = ""
-        blocks = self.get_blocks(page)
-        for block in blocks["results"]:
+        page_blocks = self.get_blocks(page_id=page["id"])
+        for block in page_blocks:
             block_type = block.get("type")
-            if not block_type or block_type not in self.supported_block_types:
+            if block_type not in self.supported_block_types:
                 continue
 
             block_data = block[block_type]
             if not block_data.get("rich_text"):
                 continue
 
-            for rich_text in block_data["rich_text"]:
-                rich_text = self.process_rich_text(rich_text, block_type)
+            for rich_text_data in block_data["rich_text"]:
+                rich_text = self.process_rich_text(rich_text_data)
                 if rich_text:
-                    raw_content += rich_text
-                    raw_content += "\n"
+                    raw_content += f"{rich_text}\n"
 
             if block.get("has_children", True):
-                children_blocks = self.get_children_blocks(block["id"])
-                nested_content = self.process_nested_blocks(children_blocks, "\t", block_type)
+                children_blocks = self.get_blocks(page_id=block["id"])
+                nested_content = self.process_nested_blocks(children_blocks, "\t")
                 if nested_content:
                     raw_content += nested_content
 
@@ -182,36 +198,31 @@ class NotionLoader:
 
     def get_children_blocks(self, block_id):
         try:
-            return self.session.get(f"https://api.notion.com/v1/blocks/{block_id}/children").json()
+            return self.session.get(f"https://api.notion.com/v1/blocks/{block_id}/children").json()["results"]
         except Exception as e:
             logger.error(f"Error getting children for block {block_id}: {e}")
-            return {}
+            return []
 
-    def process_rich_text(self, rich_text, block_type=None):
-        rich_text_type = rich_text.get("type")
+    def process_rich_text(self, rich_text_data):
+        rich_text_type = rich_text_data.get("type")
         if rich_text_type not in self.support_rich_text_data_type:
             return ""
 
-        if rich_text.get("plain_text"):
-            if block_type == NotionBlockEnum.CODE:
-                # return f"```{rich_text['text']['content']}```"
-                return ""
-            elif rich_text_type == RichTextEnum.EQUATION:
+        if rich_text_data.get("plain_text"):
+            if rich_text_type == RichTextEnum.EQUATION:
                 # return f"$${rich_text['equation']['expression']}$$"
                 return ""
-            elif rich_text.get("href", None):
+            elif rich_text_data.get("href", None):
                 # return f"<a href='{rich_text['href']}'>{rich_text['plain_text']}</a>"
                 return ""
             else:
-                return rich_text["plain_text"]
+                return rich_text_data["plain_text"]
         return ""
 
-    def get_blocks(self, page):
-        page_id = self.get_id(page)
-        url = self.get_url(page)
+    def get_blocks(self, page_id: str):
         # page의 child block 구할 때와 block의 child block 을 구할 때, 같은 API를 사용한다
 
-        results = []
+        block_list = []
         page_size = 100
         start_cursor = None
 
@@ -223,52 +234,42 @@ class NotionLoader:
             try:
                 response = self.session.get(
                     f"https://api.notion.com/v1/blocks/{page_id}/children?{query_params}",
-                ).json()
+                )
             except Exception as e:
-                logger.error(f"Error getting page id {page_id} and url {url}: {e}", exc_info=True)
+                print(f"Exception from get blocks of page_id {page_id}, {e}")
                 break
 
-            if response.get('object') == 'error':
-                logger.error(f"Error response 500 in page id : {page_id}, url: {url}")
-                print(response)
-                break
-
-            results += response['results']
-            if not response["has_more"]:
-                break
+            if response.status_code == 200:
+                data = response.json()
+                block_list += data['results']
+                if not data["has_more"]:
+                    break
+                else:
+                    start_cursor = data["next_cursor"]
             else:
-                start_cursor = response["next_cursor"]
+                print(f"Exception from get blocks of page_id {page_id}, {response.json()}")
+                break
 
-        if "results" in response.keys():
-            response['results'] = results
-        else:
-            response = {"results": []}
+        return block_list
 
-        return response
-
-    def process_nested_blocks(self, children_blocks, appended_str, block_type=None):
-        results = children_blocks["results"] if children_blocks.get("results") else []
+    def process_nested_blocks(self, children_blocks, appended_str):
         raw_content = ""
 
-        for child in results:
+        for child in children_blocks:
             child_type = child.get("type")
-            if child_type is None:
-                continue
-
             child_data = child[child_type]
 
             if not child_data.get("rich_text"):
                 continue
 
-            for text in child_data["rich_text"]:
-                rich_text = self.process_rich_text(text, block_type)
+            for rich_text_data in child_data["rich_text"]:
+                rich_text = self.process_rich_text(rich_text_data)
                 if rich_text:
                     raw_content += f"{appended_str}{rich_text}\n"
 
             if child_data.get("has_children", True):
-                children_blocks = self.get_children_blocks(child["id"])
-                new_appended_str = appended_str + "\t"
-                nested_content = self.process_nested_blocks(children_blocks, new_appended_str, block_type)
+                children_blocks = self.get_blocks(page_id=child["id"])
+                nested_content = self.process_nested_blocks(children_blocks, f"{appended_str}\t")
                 if nested_content:
                     raw_content += nested_content
         return raw_content
@@ -297,7 +298,6 @@ class NotionLoader:
             for _title in titles:
                 title += _title['plain_text']
         except Exception as e:
-            print(e)
             title = ""
 
         return title
@@ -318,8 +318,7 @@ class NotionLoader:
 
             if plain_text:
                 description += f"{k}: {plain_text}\n"
-        if description:
-            description = description[:-1]  # delete last \n
+
         return description
 
     @staticmethod

@@ -2,6 +2,7 @@ from typing import List
 
 from ninja import Schema
 
+from cores.exception import ExceptionSchema
 from sources.enums import NotionValidErrorEnum
 
 
@@ -10,12 +11,5 @@ class NotionValidPageSchema(Schema):
     icon: str
 
 
-class NotionValidPayloadSchema(Schema):
-    page_limit_counts: int
-    page_counts: int
-    notion_page_schemas: List[NotionValidPageSchema]
-
-
-class NotionValidErrorDTO(Schema):
-    payload: NotionValidPayloadSchema
+class NotionValidErrorDTO(ExceptionSchema):
     error_code: NotionValidErrorEnum
