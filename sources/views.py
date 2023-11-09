@@ -23,7 +23,7 @@ from sources.tasks import sync_notion_task
 
 @api_v2.get(
     path="source/",
-    response=[DataSourceDTO],
+    response={200: List[DataSourceDTO]},
     tags=[ApiTagEnum.source]
 )
 def all_sources(request):
@@ -32,7 +32,7 @@ def all_sources(request):
 
 @api_v2.get(
     path="source/my_integration/",
-    response=[MyDataSourceDTO],
+    response={200: List[MyDataSourceDTO]},
     tags=[ApiTagEnum.source]
 )
 def my_integrations(request):
