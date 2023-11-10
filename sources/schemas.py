@@ -27,7 +27,7 @@ class SyncStatusSchema(Schema):
     @classmethod
     def from_instance(cls, data_sync_status):
         return cls(
-            source=data_sync_status.source,
+            source=data_sync_status.data_source.source,
             total_page_count=data_sync_status.total_page_count,
             current_page_count=data_sync_status.cur_page_count,
             limit_page_count=NOTION_PAGE_LIMIT,
@@ -87,6 +87,7 @@ class NotionPageDTO(Schema):
 
 
 class DataSourceDTO(Schema):
+    id: int
     data_source: DataSourceEnum
     icon: str
     name: str
@@ -97,15 +98,16 @@ class DataSourceDTO(Schema):
 
     @classmethod
     def from_instances(cls, user, data_source_qs):
-        [
+        return [
             cls(
+                id=data_source.id,
                 data_source=data_source.source,
                 icon=data_source.icon,
                 name=data_source.name,
                 description=data_source.description,
                 limit_description=cls.get_limit_description(data_source),
                 is_available=data_source.is_available,
-                is_upvote=True if user.upvotesource_set.filter(data_source__source=data_source.source) else False
+                is_upvote=True if user.datasourceupvote_set.filter(data_source__source=data_source.source) else False
             )
             for data_source in data_source_qs
         ]
@@ -114,28 +116,51 @@ class DataSourceDTO(Schema):
     def get_limit_description(cls, data_source):
         if data_source.source == DataSourceEnum.notion:
             return f"{data_source.limit_count}페이지 연동 가능"
+        else:
+            return ""
 
 
 class MyDataSourceDTO(Schema):
     data_source_type: DataSourceEnum
     icon: str
-    email: str
-    updated_count: int
-    limit_count: int
-    last_sync_datetime: datetime
+    account_name: str
+    cur_status_description: str
+    last_sync_date_description: str
     is_running: bool
 
     @classmethod
-    def from_instances(cls, integrated_data_source_qs):
+    def from_instances(cls, data_sync_status_qs):
         return [
             cls(
-                data_source_type=data.data_source.source,
-                icon=data.data_source.icon,
-                email=data.email,
-                updated_count=0,  # TODO - get page count
-                limit_count=data.data_source.limit_count,
-                last_sync_datetime=data.last_sync_datetime,
-                is_running=False  # TODO - get_is_running
+                data_source_type=sync_status.source,
+                icon=sync_status.data_source.icon if sync_status.data_source.icon else "",
+                account_name=sync_status.account_name if sync_status.account_name else "",
+                cur_status_description=cls.get_cur_status_description(sync_status),
+                last_sync_date_description=cls.last_sync_date_description(sync_status),
+                is_running=cls.get_is_running(sync_status)
             )
-            for data in integrated_data_source_qs
+            for sync_status in data_sync_status_qs
         ]
+
+    @classmethod
+    def get_cur_status_description(cls, sync_status):
+        data_source = sync_status.data_source
+        if data_source.source == DataSourceEnum.notion:
+            cur_page_counts = sync_status.user.notionpage_set.count()
+            return f"연동된 페이지 수: ({cur_page_counts}/{data_source.limit_count})"
+
+    @classmethod
+    def last_sync_date_description(cls, sync_status):
+        if sync_status.data_source.source == DataSourceEnum.notion:
+            last_sync_date_str = sync_status.last_sync_datetime.date().strftime("%Y.%m.%d")
+            return f"최근연동일자 {last_sync_date_str}"
+
+    @classmethod
+    def get_is_running(cls, sync_status):
+        data_source = sync_status.data_source
+        if data_source.source == DataSourceEnum.notion:
+            return sync_status.is_running
+
+
+class PostUpvoteParams(Schema):
+    data_source_id: int

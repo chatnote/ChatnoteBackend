@@ -10,8 +10,19 @@ from sources.enums import DataSourceEnum
 # Create your models here.
 
 
-class DataSyncStatus(TimeStampedModel):
+class DataSource(TimeStampedModel):
+    source = models.CharField(null=True, blank=True, choices=DataSourceEnum.choices())
+    name = models.CharField(max_length=30, blank=True)
+    description = models.CharField(max_length=200, blank=True)
+    icon = models.CharField(max_length=200, blank=True)
+    limit_count = models.IntegerField(null=True, blank=True, default=None)
+    is_available = models.BooleanField(default=False)
+
+
+class DataSyncStatus(TimeStampedModel, SoftDeleteModel):
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
+    data_source = models.ForeignKey("sources.DataSource", null=True, blank=True, default=None, on_delete=models.CASCADE)
+    account_name = models.CharField(max_length=100, null=True, blank=True, default=None)
     source = models.CharField(null=True, blank=True, choices=DataSourceEnum.choices())
     last_sync_datetime = models.DateTimeField(null=True, blank=True, default=None)
     cur_page_count = models.IntegerField(default=None, null=True, blank=True)
@@ -34,6 +45,7 @@ class OriginalDocument(TimeStampedModel, SoftDeleteModel):
     title = models.TextField(blank=True, default="")
     text = models.TextField(blank=True, default="")
     text_hash = models.TextField(blank=True, default="")
+    data_source = models.ForeignKey("sources.DataSource", null=True, blank=True, default=None, on_delete=models.CASCADE)
     source = models.CharField(null=True, blank=True, choices=DataSourceEnum.choices())
 
     class Meta:
@@ -49,22 +61,6 @@ class NotionPage(TimeStampedModel, SoftDeleteModel):
     is_workspace = models.BooleanField(default=False)
 
 
-class DataSource(TimeStampedModel):
-    source = models.CharField(null=True, blank=True, choices=DataSourceEnum.choices())
-    name = models.CharField(max_length=30, blank=True)
-    description = models.CharField(max_length=200, blank=True)
-    icon = models.CharField(max_length=200, blank=True)
-    limit_count = models.IntegerField(null=True, blank=True, default=0)
-    is_available = models.BooleanField(default=False)
-
-
-class IntegratedDataSource(TimeStampedModel, SoftDeleteModel):
-    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
-    email = models.CharField(max_length=100, blank=True)
-    data_source = models.ForeignKey("sources.DataSource", on_delete=models.CASCADE)
-    last_sync_datetime = models.DateTimeField()
-
-
-class UpvoteSource(TimeStampedModel):
+class DataSourceUpvote(TimeStampedModel):
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
     data_source = models.ForeignKey("sources.DataSource", on_delete=models.CASCADE)

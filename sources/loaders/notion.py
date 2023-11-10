@@ -4,12 +4,10 @@ from time import sleep
 from typing import List
 
 import requests
-from django.utils.functional import cached_property
 from tqdm import tqdm
 
 from cores.enums import CustomEnum
 from sources.schemas import NotionPageSchema
-from sources.enums import DataSourceEnum
 
 logger = logging.getLogger(__name__)
 

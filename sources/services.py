@@ -6,7 +6,8 @@ from django.utils.functional import cached_property
 
 from chats.services import get_num_tokens_from_text
 from sources.constants import NOTION_PAGE_LIMIT
-from sources.models import DataSyncStatus, NotionPage
+from sources.loaders.notion import NotionUserLoader
+from sources.models import DataSyncStatus, NotionPage, DataSource
 
 from typing import List
 
@@ -60,6 +61,7 @@ class NotionService:
         self.user = user
         self.original_client = OriginalContextClient()
         self.chunked_client = ChunkedContextClient()
+        self.data_source = DataSource.objects.get(source=DataSourceEnum.notion)
 
     @staticmethod
     def _url_2_notion_page_schema(notion_page_schemas: List[NotionPageSchema]):
@@ -87,7 +89,8 @@ class NotionService:
             title=page.title,
             text=page.text,
             text_hash=page.text_hash,
-            source=DataSourceEnum.notion
+            source=DataSourceEnum.notion,
+            data_source=self.data_source
         ) for page in notion_page_schemas]
         OriginalDocument.objects.bulk_create(original_document_qs_list)
 
@@ -137,6 +140,7 @@ class NotionService:
         self.user.notionpage_set.all().delete()
         self.original_client.delete_documents(self.user)
         self.chunked_client.delete_documents(self.user)
+        self.user.datasyncstatus_set.filter(data_source__source=DataSourceEnum.notion).delete()
 
     def create_chunked_contexts(self, original_document_schemas: List[OriginalDocumentSchema]):
         original_document_schemas = [item for item in original_document_schemas if get_num_tokens_from_text(item.text) > 10]
@@ -227,11 +231,13 @@ class NotionSyncStatusService:
     @transaction.atomic
     def get_or_create_sync_status(self):
         try:
-            sync_status = self.user.datasyncstatus_set.get(source=DataSourceEnum.notion)
+            sync_status = self.user.datasyncstatus_set.get(data_source__source=DataSourceEnum.notion)
         except DataSyncStatus.DoesNotExist:
+            email = NotionUserLoader(self.user).get_email()
             sync_status = DataSyncStatus.objects.create(
                 user=self.user,
-                source=DataSourceEnum.notion
+                account_name=email,
+                data_source=DataSource.objects.get(source=DataSourceEnum.notion)
             )
         return sync_status
 

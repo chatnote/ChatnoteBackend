@@ -10,11 +10,13 @@ from cores.enums import ApiTagEnum
 from cores.exception import CustomException
 from cores.utils import split_list_and_run
 from sources.constants import NOTION_PAGE_LIMIT
+from sources.models import DataSource, DataSourceUpvote
 from sources.services import NotionService, NotionValidator
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO
 from sources.loaders.notion import NotionLoader
-from sources.schemas import SyncStatusSchema, NotionPageDTO, NotionPagePayloadDTO, MyDataSourceDTO, DataSourceDTO
+from sources.schemas import SyncStatusSchema, NotionPageDTO, NotionPagePayloadDTO, MyDataSourceDTO, DataSourceDTO, \
+    PostUpvoteParams
 import base64
 
 from sources.services import NotionSyncStatusService
@@ -27,7 +29,9 @@ from sources.tasks import sync_notion_task
     tags=[ApiTagEnum.source]
 )
 def all_sources(request):
-    pass
+    user = request.user
+    data_source_qs = DataSource.objects.all()
+    return DataSourceDTO.from_instances(user, data_source_qs)
 
 
 @api_v2.get(
@@ -36,15 +40,17 @@ def all_sources(request):
     tags=[ApiTagEnum.source]
 )
 def my_integrations(request):
-    pass
+    user = request.user
+    data_sync_status_qs = user.datasyncstatus_set.all()
+    return MyDataSourceDTO.from_instances(data_sync_status_qs)
 
 
 @api_v2.post(
     path="source/upvote/",
     tags=[ApiTagEnum.source]
 )
-def update_upvote(request):
-    pass
+def update_upvote(request, params: PostUpvoteParams):
+    DataSourceUpvote.objects.get_or_create(user=request.user, data_source_id=params.data_source_id)
 
 
 @api.get(
@@ -73,7 +79,6 @@ def notion_callback(request, code: str, redirect_url: str):
         }
     )
     access_token = response.json()["access_token"]
-
     user = request.user
     user.notion_access_token = access_token
     user.save()
@@ -155,7 +160,7 @@ def source_status(request):
     user = request.user
 
     data_sync_status_qs = user.datasyncstatus_set.all()
-    if not data_sync_status_qs.get(source=DataSourceEnum.notion).is_running:
+    if not data_sync_status_qs.get(data_source__source=DataSourceEnum.notion).is_running:
         ChunkedContextClient().refresh_index()
         NotionSyncStatusService(user).to_stop()
     return SyncStatusSchema.from_instances(data_sync_status_qs)
