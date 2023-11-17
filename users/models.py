@@ -15,9 +15,14 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(verbose_name="email", max_length=255, unique=True)
 
+    google_profile_image = models.TextField(blank=True, null=True, default=None)
     google_access_token = models.TextField(blank=True, null=True, default=None)
     apple_access_token = models.TextField(blank=True, null=True, default=None)
     notion_access_token = models.TextField(blank=True, null=True, default=None)
+
+    gmail_access_token = models.TextField(blank=True, null=True, default=None)
+    gmail_google_user_id = models.CharField(max_length=255, blank=True, null=True, default=None)
+    gmail_email = models.CharField(max_length=255, blank=True, null=True, default=None)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

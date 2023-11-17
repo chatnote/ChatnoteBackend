@@ -136,7 +136,7 @@ class MyDataSourceDTO(Schema):
                 icon=sync_status.data_source.icon if sync_status.data_source.icon else "",
                 account_name=sync_status.account_name if sync_status.account_name else "",
                 cur_status_description=cls.get_cur_status_description(sync_status),
-                last_sync_date_description=cls.last_sync_date_description(sync_status),
+                last_sync_date_description=cls.get_last_sync_date_description(sync_status),
                 is_running=cls.get_is_running(sync_status)
             )
             for sync_status in data_sync_status_qs
@@ -150,7 +150,7 @@ class MyDataSourceDTO(Schema):
             return f"연동된 페이지 수: ({cur_page_counts}/{data_source.limit_count})"
 
     @classmethod
-    def last_sync_date_description(cls, sync_status):
+    def get_last_sync_date_description(cls, sync_status):
         if sync_status.data_source.source == DataSourceEnum.notion:
             last_sync_date_str = sync_status.last_sync_datetime.date().strftime("%Y.%m.%d")
             return f"최근연동일자 {last_sync_date_str}"
