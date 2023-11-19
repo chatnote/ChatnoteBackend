@@ -124,7 +124,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-ACCESS_ALLOWED_EMAILS = ["ddr04014@gmail.com", "dsyhwg@gmail.com", "thd0518@gmail.com", "ehdgns1766@gmail.com", "kandy1002@naver.com"]
+ACCESS_ALLOWED_EMAILS = ["ddr04014@gmail.com", "dsyhwg@gmail.com", "thd0518@gmail.com", "ehdgns1766@gmail.com", "kandy1002@naver.com", "a01091634257@gmail.com"]
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
