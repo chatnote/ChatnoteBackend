@@ -67,7 +67,7 @@ class NotionUserLoader:
                 "Authorization": f"Bearer {self.user.notion_access_token}", "Notion-Version": "2022-06-28"
             }
         ).json()
-        if "results" in print(response):
+        if "results" in response:
             for data in response["results"]:
                 if data["type"] == "person":
                     email = data["person"]["email"]
