@@ -152,7 +152,10 @@ class MyDataSourceDTO(Schema):
     @classmethod
     def get_last_sync_date_description(cls, sync_status):
         if sync_status.data_source.source == DataSourceEnum.notion:
-            last_sync_date_str = sync_status.last_sync_datetime.date().strftime("%Y.%m.%d")
+            if not sync_status.last_sync_datetime:
+                last_sync_date_str = sync_status.modified.date().strftime("%Y.%m.%d")
+            else:
+                last_sync_date_str = sync_status.last_sync_datetime.date().strftime("%Y.%m.%d")
             return f"최근연동일자 {last_sync_date_str}"
 
     @classmethod
