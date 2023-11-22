@@ -10,6 +10,7 @@ from cores.enums import ApiTagEnum
 from cores.exception import CustomException
 from cores.utils import split_list_and_run
 from sources.constants import NOTION_PAGE_LIMIT
+from sources.loaders.gmails import GoogleGmailLoader
 from sources.models import DataSource, DataSourceUpvote
 from sources.services import NotionService, NotionValidator
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
@@ -78,7 +79,6 @@ def notion_callback(request, code: str, redirect_url: str):
             'redirect_uri': redirect_url
         }
     )
-    print(response.json())
     access_token = response.json()["access_token"]
     user = request.user
     user.notion_access_token = access_token
@@ -128,6 +128,23 @@ def sync_notion(request):
 def notion_delete(request):
     user = request.user
     NotionService(user).delete_all_documents()
+
+
+@api_v2.get(
+    path="source/gmail/callback/",
+    description="- scope에 https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email 추가",
+    tags=[ApiTagEnum.source]
+)
+def gmail_callback(request, code: str, redirect_url: str):
+    user = request.user
+    tokens = GoogleGmailLoader(user).get_tokens(code, redirect_url)
+    account = GoogleGmailLoader(user).get_account_info()
+    access_token = tokens["access_token"]
+    email = account["email"]
+
+    user.gmail_access_token = access_token
+    user.gmail_email = email
+    user.save()
 
 
 @api.get(

@@ -62,6 +62,12 @@ class OriginalDocumentSchema(Schema):
         )
 
 
+class NotionSearchPageSchema(Schema):
+    url: str
+    title: str
+    icon: str
+
+
 class NotionPageSchema(Schema):
     url: str
     page_id: str
@@ -167,3 +173,9 @@ class MyDataSourceDTO(Schema):
 
 class PostUpvoteParams(Schema):
     data_source_id: int
+
+
+class GmailMessageSchema(Schema):
+    title: str
+    description: str
+    url: str

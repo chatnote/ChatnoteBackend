@@ -62,6 +62,9 @@ def google_callback(request, code: str, redirect_url: str):
     except User.DoesNotExist:
         user = User.objects.create(email=email)
 
+    user.google_access_token = access_token
+    user.save()
+
     token = CustomJwtTokenAuth().encode_jwt(user, SignupEnum.google)
     return SignUpResponse(token=token, user=user)
 

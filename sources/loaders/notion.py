@@ -7,7 +7,7 @@ import requests
 from tqdm import tqdm
 
 from cores.enums import CustomEnum
-from sources.schemas import NotionPageSchema
+from sources.schemas import NotionPageSchema, NotionSearchPageSchema
 
 logger = logging.getLogger(__name__)
 
@@ -112,23 +112,47 @@ class NotionLoader:
             # RichTextEnum.EQUATION
         ]
 
-        self.body_params = {"page_size": 100}
+    def search(self, keyword: str, offset: int = 0, limit: int = 15) -> List[NotionSearchPageSchema]:
+        body_params = {
+            "query": f"{keyword}",
+            "sort": {
+                "direction": "descending",
+                "timestamp": "last_edited_time"
+            },
+            "page_size": 50
+        }
+        response = self.session.post(
+            "https://api.notion.com/v1/search",
+            json=body_params
+        ).json()
+
+        notion_search_page_schemas = [
+            NotionSearchPageSchema(
+                url=self.get_url(p_or_d),
+                title=self.get_page_title(p_or_d),
+                icon=self.get_icon(p_or_d)
+            ) for p_or_d in response["results"][offset: offset + limit]
+        ]
+        return notion_search_page_schemas
 
     def get_all_page_or_databases(self) -> List[dict]:
         # Get all pages
         pages_or_databases = []
 
+        body_params = {
+            "page_size": 100
+        }
         while True:
             response = self.session.post(
                 "https://api.notion.com/v1/search",
-                json=self.body_params,
+                json=body_params,
             ).json()
 
             pages_or_databases += response['results']
             if not response["has_more"]:
                 break
             else:
-                self.body_params.update({"start_cursor": response["next_cursor"]})
+                body_params.update({"start_cursor": response["next_cursor"]})
 
         return pages_or_databases
 

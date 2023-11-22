@@ -49,5 +49,6 @@ class ApiTagEnum(CustomEnum):
     user = 'user'
     document = 'document'
     source = 'source'
+    search = 'search'
     chat = 'chat'
     test = 'test'

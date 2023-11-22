@@ -20,5 +20,6 @@ urlpatterns = [
     path("", include("users.urls")),
     path("", include("sources.urls")),
     path("", include("chats.urls")),
+    path("", include("searches.urls")),
     path("", include("cores.urls")),
 ]

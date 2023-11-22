@@ -21,6 +21,7 @@ class User(AbstractUser):
     notion_access_token = models.TextField(blank=True, null=True, default=None)
 
     gmail_access_token = models.TextField(blank=True, null=True, default=None)
+    gmail_refresh_token = models.TextField(blank=True, null=True, default=None)
     gmail_google_user_id = models.CharField(max_length=255, blank=True, null=True, default=None)
     gmail_email = models.CharField(max_length=255, blank=True, null=True, default=None)
 
