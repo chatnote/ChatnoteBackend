@@ -24,14 +24,14 @@ def search(request, keyword: str, offset: int, limit: int):
     user = request.user
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        future1 = executor.submit(NotionLoader(user).search, keyword, offset, limit)
-        future2 = executor.submit(GoogleGmailLoader(user).get_message_schemas, keyword, offset, limit)
+        future1 = executor.submit(NotionLoader(user).keyword_search, keyword, offset, limit)
+        future2 = executor.submit(GoogleGmailLoader(user).keyword_search, keyword, offset, limit)
 
         notion_search_page_schemas = future1.result()
         gmail_message_schemas = future2.result()
 
-    # notion_search_page_schemas = NotionLoader(user).search(keyword, offset, limit)
-    # gmail_message_schemas = GoogleGmailLoader(user).get_message_schemas(keyword, offset, limit)
+    # notion_search_page_schemas = NotionLoader(user).keyword_search(keyword, offset, limit)
+    # gmail_message_schemas = GoogleGmailLoader(user).keyword_search(keyword, offset, limit)
 
     return SearchResponseDTO(
         notion=NotionSearchResponseDTO.from_notion_search_page_schemas(notion_search_page_schemas),
@@ -46,7 +46,7 @@ def search(request, keyword: str, offset: int, limit: int):
 )
 def gmail_search(request, keyword: str, offset: int, limit: int):
     user = request.user
-    gmail_message_schemas = GoogleGmailLoader(user).get_message_schemas(keyword, offset, limit)
+    gmail_message_schemas = GoogleGmailLoader(user).keyword_search(keyword, offset, limit)
 
     return GmailSearchResponseDTO.from_gmail_message_schemas(gmail_message_schemas)
 
@@ -58,5 +58,5 @@ def gmail_search(request, keyword: str, offset: int, limit: int):
 )
 def notion_search(request, keyword: str, offset: int, limit: int):
     user = request.user
-    notion_search_page_schemas = NotionLoader(user).search(keyword, offset, limit)
+    notion_search_page_schemas = NotionLoader(user).keyword_search(keyword, offset, limit)
     return NotionSearchResponseDTO.from_notion_search_page_schemas(notion_search_page_schemas)

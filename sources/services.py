@@ -6,6 +6,7 @@ from django.utils.functional import cached_property
 
 from chats.services import get_num_tokens_from_text
 from sources.constants import NOTION_PAGE_LIMIT
+from sources.loaders.gmails import GoogleGmailLoader
 from sources.loaders.notion import NotionUserLoader
 from sources.models import DataSyncStatus, NotionPage, DataSource
 
@@ -140,7 +141,6 @@ class NotionService:
         self.user.notionpage_set.all().delete()
         self.original_client.delete_documents(self.user)
         self.chunked_client.delete_documents(self.user)
-        self.user.datasyncstatus_set.filter(data_source__source=DataSourceEnum.notion).delete()
 
     def create_chunked_contexts(self, original_document_schemas: List[OriginalDocumentSchema]):
         original_document_schemas = [item for item in original_document_schemas if get_num_tokens_from_text(item.text) > 10]
@@ -259,3 +259,23 @@ class NotionSyncStatusService:
         sync_status = self.get_or_create_sync_status()
         sync_status.last_sync_datetime = datetime.now()
         sync_status.save()
+
+
+class GmailSyncStatusService:
+    def __init__(self, user):
+        self.user = user
+
+    @transaction.atomic
+    def get_or_create_sync_status(self):
+        try:
+            sync_status = self.user.datasyncstatus_set.get(data_source__source=DataSourceEnum.gmail)
+        except DataSyncStatus.DoesNotExist:
+            account = GoogleGmailLoader(self.user).get_account_info()
+            email = account["email"]
+            sync_status = DataSyncStatus.objects.create(
+                user=self.user,
+                account_name=email,
+                data_source=DataSource.objects.get(source=DataSourceEnum.gmail),
+                last_sync_datetime=datetime.now()
+            )
+        return sync_status

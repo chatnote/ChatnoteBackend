@@ -112,7 +112,10 @@ class NotionLoader:
             # RichTextEnum.EQUATION
         ]
 
-    def search(self, keyword: str, offset: int = 0, limit: int = 15) -> List[NotionSearchPageSchema]:
+    def keyword_search(self, keyword: str, offset: int = 0, limit: int = 15) -> List[NotionSearchPageSchema]:
+        if not self.user.notion_access_token:
+            return []
+
         body_params = {
             "query": f"{keyword}",
             "sort": {

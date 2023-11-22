@@ -12,7 +12,7 @@ from cores.utils import split_list_and_run
 from sources.constants import NOTION_PAGE_LIMIT
 from sources.loaders.gmails import GoogleGmailLoader
 from sources.models import DataSource, DataSourceUpvote
-from sources.services import NotionService, NotionValidator
+from sources.services import NotionService, NotionValidator, GmailSyncStatusService
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO
 from sources.loaders.notion import NotionLoader
@@ -128,6 +128,9 @@ def sync_notion(request):
 def notion_delete(request):
     user = request.user
     NotionService(user).delete_all_documents()
+    user.datasyncstatus_set.filter(data_source__source=DataSourceEnum.notion).delete()
+    user.notion_access_token = None
+    user.save()
 
 
 @api_v2.get(
@@ -138,12 +141,21 @@ def notion_delete(request):
 def gmail_callback(request, code: str, redirect_url: str):
     user = request.user
     tokens = GoogleGmailLoader(user).get_tokens(code, redirect_url)
-    account = GoogleGmailLoader(user).get_account_info()
     access_token = tokens["access_token"]
-    email = account["email"]
-
     user.gmail_access_token = access_token
-    user.gmail_email = email
+    user.save()
+
+    GmailSyncStatusService(user).get_or_create_sync_status()
+
+
+@api_v2.post(
+    path="source/gmail/delete/",
+    tags=[ApiTagEnum.source]
+)
+def gmail_delete(request):
+    user = request.user
+    user.datasyncstatus_set.filter(data_source__source=DataSourceEnum.gmail).delete()
+    user.gmail_access_token = None
     user.save()
 
 

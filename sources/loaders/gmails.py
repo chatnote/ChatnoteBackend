@@ -59,7 +59,9 @@ class GoogleGmailLoader:
         )
         return response.json()
 
-    def get_message_schemas(self, keyword: str, offset: int = 0, limit: int = 15, next_page_token=None) -> List[GmailMessageSchema]:
+    def keyword_search(self, keyword: str, offset: int = 0, limit: int = 15, next_page_token=None) -> List[GmailMessageSchema]:
+        if not self.user.gmail_access_token:
+            return []
         # https://support.google.com/mail/answer/7190?hl=ko
         q_date = "q=category:primary newer_than:7d 'ddr04014@gmail.com'"
 
