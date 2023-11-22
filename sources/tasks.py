@@ -12,5 +12,8 @@ def sync_notion_task(pages: List[dict], user_id: int, total_page_urls: list):
     notion_document_schemas = NotionLoader(user).overall_process(pages)
 
     notion_sync = NotionSync(user, notion_document_schemas)
-    notion_sync.overall_process(total_page_urls)
-    NotionSyncStatusService(user).save_current_page_count(len(pages))
+    try:
+        notion_sync.overall_process(total_page_urls)
+        NotionSyncStatusService(user).save_current_page_count(len(pages))
+    except Exception:
+        NotionSyncStatusService(user).save_current_page_count(len(pages))

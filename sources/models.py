@@ -35,7 +35,7 @@ class DataSyncStatus(TimeStampedModel, SoftDeleteModel):
 
     @property
     def is_running(self):
-        if self.source == DataSourceEnum.notion:
+        if self.data_source.source == DataSourceEnum.notion:
             return False if self.cur_page_count >= self.total_page_count else True
 
 

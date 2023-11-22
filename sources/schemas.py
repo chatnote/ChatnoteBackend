@@ -138,7 +138,7 @@ class MyDataSourceDTO(Schema):
     def from_instances(cls, data_sync_status_qs):
         return [
             cls(
-                data_source_type=sync_status.source,
+                data_source_type=sync_status.data_source.source,
                 icon=sync_status.data_source.icon if sync_status.data_source.icon else "",
                 account_name=sync_status.account_name if sync_status.account_name else "",
                 cur_status_description=cls.get_cur_status_description(sync_status),
