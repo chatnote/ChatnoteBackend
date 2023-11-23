@@ -79,6 +79,8 @@ def notion_callback(request, code: str, redirect_url: str):
             'redirect_uri': redirect_url
         }
     )
+    if "access_token" not in response.json():
+        print(response.json())
     access_token = response.json()["access_token"]
     user = request.user
     user.notion_access_token = access_token

@@ -25,6 +25,11 @@ class User(AbstractUser):
     gmail_google_user_id = models.CharField(max_length=255, blank=True, null=True, default=None)
     gmail_email = models.CharField(max_length=255, blank=True, null=True, default=None)
 
+    google_drive_access_token = models.TextField(blank=True, null=True, default=None)
+    google_drive_refresh_token = models.TextField(blank=True, null=True, default=None)
+    google_drive_google_user_id = models.CharField(max_length=255, blank=True, null=True, default=None)
+    google_drive_email = models.CharField(max_length=255, blank=True, null=True, default=None)
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
