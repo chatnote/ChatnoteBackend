@@ -20,8 +20,10 @@ from sources.schemas import GmailMessageSchema
     response={200: SearchResponseDTO},
     tags=[ApiTagEnum.search]
 )
-def search(request, keyword: str, offset: int, limit: int):
+def search(request, keyword: str):
     user = request.user
+    offset = 0
+    limit = 10
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         future1 = executor.submit(NotionLoader(user).keyword_search, keyword, offset, limit)
@@ -37,26 +39,3 @@ def search(request, keyword: str, offset: int, limit: int):
         notion=NotionSearchResponseDTO.from_notion_search_page_schemas(notion_search_page_schemas),
         gmail=GmailSearchResponseDTO.from_gmail_message_schemas(gmail_message_schemas)
     )
-
-
-@api_v2.get(
-    path="search/gmail/",
-    response={200: List[GmailSearchResponseDTO]},
-    tags=[ApiTagEnum.search]
-)
-def gmail_search(request, keyword: str, offset: int, limit: int):
-    user = request.user
-    gmail_message_schemas = GoogleGmailLoader(user).keyword_search(keyword, offset, limit)
-
-    return GmailSearchResponseDTO.from_gmail_message_schemas(gmail_message_schemas)
-
-
-@api_v2.get(
-    path="search/notion/",
-    response={200: List[NotionSearchResponseDTO]},
-    tags=[ApiTagEnum.search]
-)
-def notion_search(request, keyword: str, offset: int, limit: int):
-    user = request.user
-    notion_search_page_schemas = NotionLoader(user).keyword_search(keyword, offset, limit)
-    return NotionSearchResponseDTO.from_notion_search_page_schemas(notion_search_page_schemas)

@@ -129,6 +129,9 @@ class NotionLoader:
             json=body_params
         ).json()
 
+        if "results" not in response:
+            return []
+
         notion_search_page_schemas = [
             NotionSearchPageSchema(
                 url=self.get_url(p_or_d),

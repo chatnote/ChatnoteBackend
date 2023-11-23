@@ -2,12 +2,11 @@ import requests
 from django.conf import settings
 
 
-class GoogleDriveLoader:
+class GoogleCalendarLoader:
     def __init__(self, user):
-        # scope: https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.metadata.readonly
         self.user = user
         self.headers = {
-            'Authorization': f'Bearer {user.google_drive_access_token}',
+            'Authorization': f'Bearer {user.google_calendar_access_token}',
             'Content-type': 'application/x-www-form-urlencoded',
             'charset': 'utf-8'
         }
@@ -40,7 +39,7 @@ class GoogleDriveLoader:
             data={
                 "client_id": settings.GOOGLE_CLIENT_ID,
                 "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "refresh_token": self.user.google_drive_refresh_token,
+                "refresh_token": self.user.google_calendar_refresh_token,
                 "grant_type": "refresh_token",
             }
         )

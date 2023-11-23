@@ -10,9 +10,10 @@ from cores.enums import ApiTagEnum
 from cores.exception import CustomException
 from cores.utils import split_list_and_run
 from sources.constants import NOTION_PAGE_LIMIT
+from sources.loaders.drives import GoogleDriveLoader
 from sources.loaders.gmails import GoogleGmailLoader
 from sources.models import DataSource, DataSourceUpvote
-from sources.services import NotionService, NotionValidator, GmailSyncStatusService
+from sources.services import NotionService, NotionValidator, GmailSyncStatusService, GoogleDriveSyncStatusService
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO
 from sources.loaders.notion import NotionLoader
@@ -161,6 +162,57 @@ def gmail_delete(request):
     user.save()
 
 
+@api_v2.get(
+    path="source/google_drive/callback/",
+    tags=[ApiTagEnum.source]
+)
+def google_drive_callback(request, code: str, redirect_url: str):
+    user = request.user
+    tokens = GoogleDriveLoader(user).get_tokens(code, redirect_url)
+    access_token = tokens["access_token"]
+    user.google_drive_access_token = access_token
+    user.save()
+
+    GoogleDriveSyncStatusService(user).get_or_create_sync_status()
+
+
+@api_v2.post(
+    path="source/google_drive/delete/",
+    tags=[ApiTagEnum.source]
+)
+def google_drive_delete(request):
+    user = request.user
+    user.datasyncstatus_set.filter(data_source__source=DataSourceEnum.google_drive).delete()
+    user.google_drive_access_token = None
+    user.save()
+
+
+@api_v2.get(
+    path="source/google_calendar/callback/",
+    tags=[ApiTagEnum.source]
+)
+def google_calendar_callback(request, code: str, redirect_url: str):
+    user = request.user
+    tokens = GoogleCalendarLoader(user).get_tokens(code, redirect_url)
+    access_token = tokens["access_token"]
+    user.google_calendar_access_token = access_token
+    user.save()
+
+    GoogleCalendarSyncStatusService(user).get_or_create_sync_status()
+
+
+@api_v2.post(
+    path="source/google_calendar/delete/",
+    tags=[ApiTagEnum.source]
+)
+def google_calendar_delete(request):
+    user = request.user
+    user.datasyncstatus_set.filter(data_source__source=DataSourceEnum.google_calendar).delete()
+    user.google_calendar_access_token = None
+    user.save()
+
+
+# TODO: DELETE
 @api.get(
     path="source/notion/pages/",
     response={200: NotionPageDTO},
@@ -183,6 +235,7 @@ def get_pages(request):
     )
 
 
+# TODO: DELETE
 @api.get(
     path="source/status/",
     response={200: List[SyncStatusSchema]},

@@ -95,7 +95,6 @@ class NotionPageDTO(Schema):
 class DataSourceDTO(Schema):
     id: int
     data_source: DataSourceEnum
-    icon: str
     name: str
     description: str
     limit_description: str
@@ -108,7 +107,6 @@ class DataSourceDTO(Schema):
             cls(
                 id=data_source.id,
                 data_source=data_source.source,
-                icon=data_source.icon,
                 name=data_source.name,
                 description=data_source.description,
                 limit_description=cls.get_limit_description(data_source),
@@ -128,7 +126,6 @@ class DataSourceDTO(Schema):
 
 class MyDataSourceDTO(Schema):
     data_source_type: DataSourceEnum
-    icon: str
     account_name: str
     cur_status_description: str
     last_sync_date_description: str
@@ -139,36 +136,28 @@ class MyDataSourceDTO(Schema):
         return [
             cls(
                 data_source_type=sync_status.data_source.source,
-                icon=sync_status.data_source.icon if sync_status.data_source.icon else "",
                 account_name=sync_status.account_name if sync_status.account_name else "",
-                cur_status_description=cls.get_cur_status_description(sync_status),
-                last_sync_date_description=cls.get_last_sync_date_description(sync_status),
-                is_running=cls.get_is_running(sync_status)
+                cur_status_description=cls.cur_status_desc(sync_status) if cls.cur_status_desc(sync_status) else "",
+                last_sync_date_description=cls.last_sync_date_desc(sync_status) if cls.last_sync_date_desc(sync_status) else "",
+                is_running=sync_status.is_running
             )
             for sync_status in data_sync_status_qs
         ]
 
     @classmethod
-    def get_cur_status_description(cls, sync_status):
+    def cur_status_desc(cls, sync_status):
         data_source = sync_status.data_source
         if data_source.source == DataSourceEnum.notion:
             cur_page_counts = sync_status.user.notionpage_set.count()
             return f"연동된 페이지 수: ({cur_page_counts}/{data_source.limit_count})"
 
     @classmethod
-    def get_last_sync_date_description(cls, sync_status):
-        if sync_status.data_source.source == DataSourceEnum.notion:
-            if not sync_status.last_sync_datetime:
-                last_sync_date_str = sync_status.modified.date().strftime("%Y.%m.%d")
-            else:
-                last_sync_date_str = sync_status.last_sync_datetime.date().strftime("%Y.%m.%d")
-            return f"최근연동일자 {last_sync_date_str}"
-
-    @classmethod
-    def get_is_running(cls, sync_status):
-        data_source = sync_status.data_source
-        if data_source.source == DataSourceEnum.notion:
-            return sync_status.is_running
+    def last_sync_date_desc(cls, sync_status):
+        if not sync_status.last_sync_datetime:
+            last_sync_date_str = sync_status.modified.date().strftime("%Y.%m.%d")
+        else:
+            last_sync_date_str = sync_status.last_sync_datetime.date().strftime("%Y.%m.%d")
+        return f"최근연동일자 {last_sync_date_str}"
 
 
 class PostUpvoteParams(Schema):

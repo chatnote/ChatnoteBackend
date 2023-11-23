@@ -6,6 +6,8 @@ class DataSourceEnum(CustomEnum):
     google_calendar = 'google_calendar'
     gmail = 'gmail'
     google_drive = 'google_drive'
+    slack = 'slack'
+    github = 'github'
 
 
 class NotionValidErrorEnum(CustomEnum):

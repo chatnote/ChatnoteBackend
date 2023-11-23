@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.db import models
+from django.db.models import Q
 from django_extensions.db.models import TimeStampedModel
 
 from cores.models import SoftDeleteModel
@@ -23,20 +24,16 @@ class DataSyncStatus(TimeStampedModel, SoftDeleteModel):
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
     data_source = models.ForeignKey("sources.DataSource", null=True, blank=True, default=None, on_delete=models.CASCADE)
     account_name = models.CharField(max_length=100, null=True, blank=True, default=None)
-    source = models.CharField(null=True, blank=True, choices=DataSourceEnum.choices())
     last_sync_datetime = models.DateTimeField(null=True, blank=True, default=None)
     cur_page_count = models.IntegerField(default=None, null=True, blank=True)
     total_page_count = models.IntegerField(default=None, null=True, blank=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=['user', 'source'], name='user source unique')
-        ]
 
     @property
     def is_running(self):
         if self.data_source.source == DataSourceEnum.notion:
             return False if self.cur_page_count >= self.total_page_count else True
+        else:
+            return False
 
 
 class OriginalDocument(TimeStampedModel, SoftDeleteModel):

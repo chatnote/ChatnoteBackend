@@ -6,7 +6,9 @@ from django.utils.functional import cached_property
 
 from chats.services import get_num_tokens_from_text
 from sources.constants import NOTION_PAGE_LIMIT
+from sources.loaders.drives import GoogleDriveLoader
 from sources.loaders.gmails import GoogleGmailLoader
+from sources.loaders.google_calendars import GoogleCalendarLoader
 from sources.loaders.notion import NotionUserLoader
 from sources.models import DataSyncStatus, NotionPage, DataSource
 
@@ -276,6 +278,46 @@ class GmailSyncStatusService:
                 user=self.user,
                 account_name=email,
                 data_source=DataSource.objects.get(source=DataSourceEnum.gmail),
+                last_sync_datetime=datetime.now()
+            )
+        return sync_status
+
+
+class GoogleDriveSyncStatusService:
+    def __init__(self, user):
+        self.user = user
+
+    @transaction.atomic
+    def get_or_create_sync_status(self):
+        try:
+            sync_status = self.user.datasyncstatus_set.get(data_source__source=DataSourceEnum.google_drive)
+        except DataSyncStatus.DoesNotExist:
+            account = GoogleDriveLoader(self.user).get_account_info()
+            email = account["email"]
+            sync_status = DataSyncStatus.objects.create(
+                user=self.user,
+                account_name=email,
+                data_source=DataSource.objects.get(source=DataSourceEnum.google_drive),
+                last_sync_datetime=datetime.now()
+            )
+        return sync_status
+
+
+class GoogleCalendarSyncStatusService:
+    def __init__(self, user):
+        self.user = user
+
+    @transaction.atomic
+    def get_or_create_sync_status(self):
+        try:
+            sync_status = self.user.datasyncstatus_set.get(data_source__source=DataSourceEnum.google_calendar)
+        except DataSyncStatus.DoesNotExist:
+            account = GoogleCalendarLoader(self.user).get_account_info()
+            email = account["email"]
+            sync_status = DataSyncStatus.objects.create(
+                user=self.user,
+                account_name=email,
+                data_source=DataSource.objects.get(source=DataSourceEnum.google_calendar),
                 last_sync_datetime=datetime.now()
             )
         return sync_status

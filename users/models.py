@@ -30,6 +30,11 @@ class User(AbstractUser):
     google_drive_google_user_id = models.CharField(max_length=255, blank=True, null=True, default=None)
     google_drive_email = models.CharField(max_length=255, blank=True, null=True, default=None)
 
+    google_calendar_access_token = models.TextField(blank=True, null=True, default=None)
+    google_calendar_refresh_token = models.TextField(blank=True, null=True, default=None)
+    google_calendar_google_user_id = models.CharField(max_length=255, blank=True, null=True, default=None)
+    google_calendar_email = models.CharField(max_length=255, blank=True, null=True, default=None)
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
