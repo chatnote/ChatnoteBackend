@@ -51,3 +51,6 @@ class GoogleCalendarLoader:
             headers=self.headers
         )
         return response.json()
+
+    def keyword_search(self, keyword: str, offset: int = 0, limit: int = 10, next_page_token=None):
+        pass

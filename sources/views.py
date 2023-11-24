@@ -1,3 +1,4 @@
+import urllib.parse
 from datetime import timedelta
 from typing import List
 
@@ -12,8 +13,10 @@ from cores.utils import split_list_and_run
 from sources.constants import NOTION_PAGE_LIMIT
 from sources.loaders.drives import GoogleDriveLoader
 from sources.loaders.gmails import GoogleGmailLoader
+from sources.loaders.google_calendars import GoogleCalendarLoader
 from sources.models import DataSource, DataSourceUpvote
-from sources.services import NotionService, NotionValidator, GmailSyncStatusService, GoogleDriveSyncStatusService
+from sources.services import NotionService, NotionValidator, GmailSyncStatusService, GoogleDriveSyncStatusService, \
+    GoogleCalendarSyncStatusService
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO
 from sources.loaders.notion import NotionLoader
@@ -64,6 +67,7 @@ def update_upvote(request, params: PostUpvoteParams):
     tags=[ApiTagEnum.source]
 )
 def notion_callback(request, code: str, redirect_url: str):
+    code = urllib.parse.unquote(code)
     credentials = f"{settings.NOTION_CLIENT_ID}:{settings.NOTION_SECRET}"
     encoded_credentials = base64.b64encode(credentials.encode()).decode()
 
@@ -143,6 +147,7 @@ def notion_delete(request):
 )
 def gmail_callback(request, code: str, redirect_url: str):
     user = request.user
+    code = urllib.parse.unquote(code)
     tokens = GoogleGmailLoader(user).get_tokens(code, redirect_url)
     access_token = tokens["access_token"]
     user.gmail_access_token = access_token
@@ -168,6 +173,7 @@ def gmail_delete(request):
 )
 def google_drive_callback(request, code: str, redirect_url: str):
     user = request.user
+    code = urllib.parse.unquote(code)
     tokens = GoogleDriveLoader(user).get_tokens(code, redirect_url)
     access_token = tokens["access_token"]
     user.google_drive_access_token = access_token
@@ -193,6 +199,7 @@ def google_drive_delete(request):
 )
 def google_calendar_callback(request, code: str, redirect_url: str):
     user = request.user
+    code = urllib.parse.unquote(code)
     tokens = GoogleCalendarLoader(user).get_tokens(code, redirect_url)
     access_token = tokens["access_token"]
     user.google_calendar_access_token = access_token

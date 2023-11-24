@@ -20,8 +20,8 @@ class NotionSearchResponseDTO(Schema):
 
 class GmailSearchResponseDTO(Schema):
     title: str
-    url: str
     description: str
+    url: str
 
     @classmethod
     def from_gmail_message_schemas(cls, gmail_message_schemas):
@@ -35,6 +35,24 @@ class GmailSearchResponseDTO(Schema):
         ]
 
 
+class GoogleDriveResponseDTO(Schema):
+    title: str
+    description: str
+    url: str
+
+    @classmethod
+    def from_google_drive_file_schemas(cls, google_drive_file_schemas):
+        return [
+            cls(
+                title=file.name,
+                description=f"수정된 날짜: {file.modified_time.split('T')[0]}",
+                url=file.webview_link
+            )
+            for file in google_drive_file_schemas
+        ]
+
+
 class SearchResponseDTO(Schema):
     notion: List[NotionSearchResponseDTO]
     gmail: List[GmailSearchResponseDTO]
+    google_drive: List[GoogleDriveResponseDTO]

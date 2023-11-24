@@ -168,3 +168,11 @@ class GmailMessageSchema(Schema):
     title: str
     description: str
     url: str
+
+
+class GoogleDriveFileSchema(Schema):
+    id: str
+    name: str
+    mime_type: str
+    modified_time: str
+    webview_link: str

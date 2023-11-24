@@ -1,3 +1,4 @@
+import urllib.parse
 from datetime import datetime
 
 from django.shortcuts import render
@@ -54,6 +55,7 @@ def delete_user(request):
     tags=[ApiTagEnum.user]
 )
 def google_callback(request, code: str, redirect_url: str):
+    code = urllib.parse.unquote(code)
     access_token = GoogleLoginService.get_token(code, redirect_url)
     email = GoogleLoginService.get_email(access_token)
 
