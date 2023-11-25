@@ -27,7 +27,7 @@ class GoogleLoginService:
         return access_token
 
     @staticmethod
-    def get_email(access_token: str) -> str:
+    def get_account_info(access_token: str) -> dict:
         response = requests.get(
             url="https://www.googleapis.com/oauth2/v2/userinfo",
             headers={
@@ -36,8 +36,7 @@ class GoogleLoginService:
                 'charset': 'utf-8'
             }
         )
-        email = response.json()['email']
-        return email
+        return response.json()
 
 
 class AppleLoginService:

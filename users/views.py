@@ -57,13 +57,16 @@ def delete_user(request):
 def google_callback(request, code: str, redirect_url: str):
     code = urllib.parse.unquote(code)
     access_token = GoogleLoginService.get_token(code, redirect_url)
-    email = GoogleLoginService.get_email(access_token)
+    tokens = GoogleLoginService.get_account_info(access_token)
+    email = tokens["email"]
+    picture = tokens["picture"]
 
     try:
         user = User.objects.get(email=email)
     except User.DoesNotExist:
         user = User.objects.create(email=email)
 
+    user.google_profile_image = picture
     user.google_access_token = access_token
     user.save()
 

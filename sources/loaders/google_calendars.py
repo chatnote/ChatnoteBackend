@@ -71,9 +71,9 @@ class GoogleCalendarLoader:
         if "error" in response.json():
             if response.json()["error"]["status"] == "UNAUTHENTICATED":
                 tokens = self.get_tokens_by_refresh()
-                self.user.gmail_access_token = tokens["access_token"]
+                self.user.google_calendar_access_token = tokens["access_token"]
                 self.user.save()
-                self.headers['Authorization'] = f'Bearer {self.user.gmail_access_token}'
+                self.headers['Authorization'] = f'Bearer {self.user.google_calendar_access_token}'
 
                 response = requests.get(
                     url=f"https://www.googleapis.com/calendar/v3/calendars/{calendar_id}/events?{params}",

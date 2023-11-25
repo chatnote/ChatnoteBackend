@@ -4,10 +4,11 @@ from ninja import Schema
 class UserSchema(Schema):
     id: int
     email: str
+    profile_image: str | None
 
     @classmethod
     def from_instance(cls, user):
-        return cls(id=user.id, email=user.email)
+        return cls(id=user.id, email=user.email, profile_image=user.google_profile_image)
 
 
 class SignUpParams(Schema):
@@ -23,7 +24,7 @@ class SignUpResponse(Schema):
     def from_instance(cls, token, user):
         return cls(
             token=token,
-            user=UserSchema(id=user.id, email=user.email)
+            user=UserSchema(id=user.id, email=user.email, profile_image=user.google_profile_image)
         )
 
 

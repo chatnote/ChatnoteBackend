@@ -72,7 +72,7 @@ class GoogleDriveLoader:
         if "error" in response.json():
             if response.json()["error"]["status"] == "UNAUTHENTICATED":
                 tokens = self.get_tokens_by_refresh()
-                self.user.gmail_access_token = tokens["access_token"]
+                self.user.google_drive_access_token = tokens["access_token"]
                 self.user.save()
                 self.headers['Authorization'] = f'Bearer {self.user.google_drive_access_token}'
 
