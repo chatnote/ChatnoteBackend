@@ -150,7 +150,9 @@ def gmail_callback(request, code: str, redirect_url: str):
     code = urllib.parse.unquote(code)
     tokens = GoogleGmailLoader(user).get_tokens(code, redirect_url)
     access_token = tokens["access_token"]
+    refresh_token = tokens["refresh_token"]
     user.gmail_access_token = access_token
+    user.gmail_refresh_token = refresh_token
     user.save()
 
     GmailSyncStatusService(user).get_or_create_sync_status()
@@ -176,7 +178,9 @@ def google_drive_callback(request, code: str, redirect_url: str):
     code = urllib.parse.unquote(code)
     tokens = GoogleDriveLoader(user).get_tokens(code, redirect_url)
     access_token = tokens["access_token"]
+    refresh_token = tokens["refresh_token"]
     user.google_drive_access_token = access_token
+    user.google_drive_refresh_token = refresh_token
     user.save()
 
     GoogleDriveSyncStatusService(user).get_or_create_sync_status()
@@ -202,7 +206,9 @@ def google_calendar_callback(request, code: str, redirect_url: str):
     code = urllib.parse.unquote(code)
     tokens = GoogleCalendarLoader(user).get_tokens(code, redirect_url)
     access_token = tokens["access_token"]
+    refresh_token = tokens["refresh_token"]
     user.google_calendar_access_token = access_token
+    user.google_calendar_refresh_token = refresh_token
     user.save()
 
     GoogleCalendarSyncStatusService(user).get_or_create_sync_status()

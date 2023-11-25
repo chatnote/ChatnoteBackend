@@ -176,3 +176,12 @@ class GoogleDriveFileSchema(Schema):
     mime_type: str
     modified_time: str
     webview_link: str
+
+
+class GoogleCalendarEventSchema(Schema):
+    creator_email: str
+    creator_display_name: str | None
+    start_date: str | None
+    end_date: str | None
+    summary: str | None
+    html_link: str

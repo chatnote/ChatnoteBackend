@@ -59,7 +59,7 @@ class GoogleGmailLoader:
         )
         return response.json()
 
-    def keyword_search(self, keyword: str, offset: int = 0, limit: int = 15, next_page_token=None) -> List[GmailMessageSchema]:
+    def keyword_search(self, keyword: str, offset: int = 0, limit: int = 10, next_page_token=None) -> List[GmailMessageSchema]:
         if not self.user.gmail_access_token:
             return []
         # https://support.google.com/mail/answer/7190?hl=ko
@@ -77,9 +77,9 @@ class GoogleGmailLoader:
 
         response = requests.get(
             url=f"""https://gmail.googleapis.com/gmail/v1/users/{self.user.gmail_google_user_id}/messages?q="{keyword}" """.strip(),
-            # url=f"https://gmail.googleapis.com/gmail/v1/users/{self.user.gmail_google_user_id}/messages?{q_date}&{q_page_token}&{q_subject}".strip(),
             headers=self.headers
         )
+
         if "error" in response.json():
             if response.json()["error"]["status"] == "UNAUTHENTICATED":
                 tokens = self.get_tokens_by_refresh()
@@ -89,7 +89,6 @@ class GoogleGmailLoader:
 
                 response = requests.get(
                     url=f"""https://gmail.googleapis.com/gmail/v1/users/{self.user.gmail_google_user_id}/messages?q="{keyword}" """.strip(),
-                    # url=f"https://gmail.googleapis.com/gmail/v1/users/{self.user.gmail_google_user_id}/messages?{q_date}&{q_page_token}&{q_subject}".strip(),
                     headers=self.headers
                 )
 
@@ -98,7 +97,7 @@ class GoogleGmailLoader:
             messages = response.json()["messages"]
 
         message_ids = [message["id"] for message in messages[offset: offset+limit]]
-        with ThreadPoolExecutor(max_workers=5) as pool:
+        with ThreadPoolExecutor(max_workers=10) as pool:
             message_schemas = list(pool.map(self.get_message_schema, message_ids))
         return message_schemas
 

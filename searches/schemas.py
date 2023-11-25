@@ -52,7 +52,41 @@ class GoogleDriveResponseDTO(Schema):
         ]
 
 
+class GoogleCalendarResponseDTO(Schema):
+    title: str
+    description: str
+    url: str
+
+    @classmethod
+    def from_google_calendar_event_schemas(cls, google_calendar_event_schemas):
+        return [
+            cls(
+                title=cls.get_title(event),
+                description=cls.get_description(event),
+                url=event.html_link
+            )
+            for event in google_calendar_event_schemas
+        ]
+
+    @classmethod
+    def get_title(cls, event):
+        start_date = event.start_date.split("T")[0]
+        end_date = event.end_date.split("T")[0]
+        if start_date == end_date:
+            return f"({start_date}) {event.summary}"
+        else:
+            return f"({start_date} ~ {end_date}) {event.summary}"
+
+    @classmethod
+    def get_description(cls, event):
+        if event.creator_display_name:
+            return f"작성자: {event.creator_email} ({event.creator_display_name})"
+        else:
+            return f"작성자: {event.creator_email}"
+
+
 class SearchResponseDTO(Schema):
     notion: List[NotionSearchResponseDTO]
     gmail: List[GmailSearchResponseDTO]
     google_drive: List[GoogleDriveResponseDTO]
+    google_calendar: List[GoogleCalendarResponseDTO]
