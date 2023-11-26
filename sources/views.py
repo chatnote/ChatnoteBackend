@@ -142,7 +142,7 @@ def notion_delete(request):
 
 @api_v2.get(
     path="source/gmail/callback/",
-    description="- scope에 https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email 추가",
+    description="- scope : https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email",
     tags=[ApiTagEnum.source]
 )
 def gmail_callback(request, code: str, redirect_url: str):
@@ -171,6 +171,7 @@ def gmail_delete(request):
 
 @api_v2.get(
     path="source/google_drive/callback/",
+    description="- scope : https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.file",
     tags=[ApiTagEnum.source]
 )
 def google_drive_callback(request, code: str, redirect_url: str):
@@ -199,6 +200,7 @@ def google_drive_delete(request):
 
 @api_v2.get(
     path="source/google_calendar/callback/",
+    description="- scope : https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/calendar.readonly",
     tags=[ApiTagEnum.source]
 )
 def google_calendar_callback(request, code: str, redirect_url: str):
