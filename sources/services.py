@@ -10,6 +10,7 @@ from sources.loaders.drives import GoogleDriveLoader
 from sources.loaders.gmails import GoogleGmailLoader
 from sources.loaders.google_calendars import GoogleCalendarLoader
 from sources.loaders.notion import NotionUserLoader
+from sources.loaders.slacks import SlackLoader
 from sources.models import DataSyncStatus, NotionPage, DataSource
 
 from typing import List
@@ -318,6 +319,26 @@ class GoogleCalendarSyncStatusService:
                 user=self.user,
                 account_name=email,
                 data_source=DataSource.objects.get(source=DataSourceEnum.google_calendar),
+                last_sync_datetime=datetime.now()
+            )
+        return sync_status
+
+
+class SlackSyncStatusService:
+    def __init__(self, user):
+        self.user = user
+
+    @transaction.atomic
+    def get_or_create_sync_status(self):
+        try:
+            sync_status = self.user.datasyncstatus_set.get(data_source__source=DataSourceEnum.slack)
+        except DataSyncStatus.DoesNotExist:
+            account = SlackLoader(self.user).get_account_info()
+            real_name = account["profile"]["real_name"]
+            sync_status = DataSyncStatus.objects.create(
+                user=self.user,
+                account_name=real_name,
+                data_source=DataSource.objects.get(source=DataSourceEnum.slack),
                 last_sync_datetime=datetime.now()
             )
         return sync_status

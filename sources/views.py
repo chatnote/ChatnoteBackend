@@ -14,9 +14,10 @@ from sources.constants import NOTION_PAGE_LIMIT
 from sources.loaders.drives import GoogleDriveLoader
 from sources.loaders.gmails import GoogleGmailLoader
 from sources.loaders.google_calendars import GoogleCalendarLoader
+from sources.loaders.slacks import SlackLoader
 from sources.models import DataSource, DataSourceUpvote
 from sources.services import NotionService, NotionValidator, GmailSyncStatusService, GoogleDriveSyncStatusService, \
-    GoogleCalendarSyncStatusService
+    GoogleCalendarSyncStatusService, SlackSyncStatusService
 from sources.enums import NotionValidErrorEnum, DataSourceEnum
 from sources.exceptions import NotionValidErrorDTO
 from sources.loaders.notion import NotionLoader
@@ -224,6 +225,33 @@ def google_calendar_delete(request):
     user = request.user
     user.datasyncstatus_set.filter(data_source__source=DataSourceEnum.google_calendar).delete()
     user.google_calendar_access_token = None
+    user.save()
+
+
+@api_v2.get(
+    path="source/slack/callback/",
+    description="- scope : channels:history channels:read files:read search:read users.profile:read",
+    tags=[ApiTagEnum.source]
+)
+def google_calendar_callback(request, code: str, redirect_url: str):
+    user = request.user
+    code = urllib.parse.unquote(code)
+    tokens = SlackLoader(user).get_tokens(code, redirect_url)
+    access_token = tokens["authed_user"]["access_token"]
+    user.slack_access_token = access_token
+    user.save()
+
+    SlackSyncStatusService(user).get_or_create_sync_status()
+
+
+@api_v2.post(
+    path="source/slack/delete/",
+    tags=[ApiTagEnum.source]
+)
+def google_calendar_delete(request):
+    user = request.user
+    user.datasyncstatus_set.filter(data_source__source=DataSourceEnum.slack).delete()
+    user.slack_access_token = None
     user.save()
 
 
