@@ -185,3 +185,11 @@ class GoogleCalendarEventSchema(Schema):
     end_date: str | None
     summary: str | None
     html_link: str
+
+
+class SlackSearchSchema(Schema):
+    channel_name: str
+    text: str
+    username: str
+    permalink: str
+    timestamp: str

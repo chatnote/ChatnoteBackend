@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 
 from ninja import Schema
@@ -85,8 +86,30 @@ class GoogleCalendarResponseDTO(Schema):
             return f"작성자: {event.creator_email}"
 
 
+class SlackResponseDTO(Schema):
+    title: str
+    description: str
+    url: str
+
+    @classmethod
+    def from_slack_schemas(cls, slack_schemas):
+        return [
+            cls(
+                title=slack_schema.text[:100],
+                description=cls.get_description(slack_schema),
+                url=slack_schema.permalink
+            )
+            for slack_schema in slack_schemas
+        ]
+
+    @classmethod
+    def get_description(cls, slack_schema):
+        _datetime = datetime.fromtimestamp(float(slack_schema.timestamp))
+        return f"채널: #{slack_schema.channel_name} | 작성자: @{slack_schema.username} | 작성날짜: {datetime.strftime(_datetime, '%Y-%m-%d %H:%M')}"
+
 class SearchResponseDTO(Schema):
     notion: List[NotionSearchResponseDTO]
     gmail: List[GmailSearchResponseDTO]
     google_drive: List[GoogleDriveResponseDTO]
     google_calendar: List[GoogleCalendarResponseDTO]
+    slack: List[SlackResponseDTO]

@@ -1,5 +1,9 @@
+from typing import List
+
 import requests
 from django.conf import settings
+
+from sources.schemas import SlackSearchSchema
 
 
 class SlackLoader:
@@ -35,11 +39,24 @@ class SlackLoader:
         )
         return response.json()
 
-    def keyword_search(self, keyword: str):
+    def keyword_search(self, keyword: str,  offset: int = 0, limit: int = 10) -> List[SlackSearchSchema]:
         response = requests.get(
-            url=f"https://slack.com/api/search.all?query={keyword}",
+            url=f"https://slack.com/api/search.all?query={keyword}&sort=timestamp desc",
             headers=self.headers
         )
-        import json
-        print(json.dumps(response.json()))
-        # return response.json()
+        channel_name: str
+        text: str
+        username: str
+        permalink: str
+        timestamp: str
+
+        messages = response.json()["messages"]["matches"][offset: offset+limit]
+        return [
+            SlackSearchSchema(
+                channel_name=message["channel"]["name"],
+                text=message["text"],
+                username=message["username"],
+                permalink=message["permalink"],
+                timestamp=message["ts"]
+            ) for message in messages
+        ]
