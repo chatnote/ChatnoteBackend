@@ -50,13 +50,17 @@ class SlackLoader:
         permalink: str
         timestamp: str
 
-        messages = response.json()["messages"]["matches"][offset: offset+limit]
-        return [
-            SlackSearchSchema(
-                channel_name=message["channel"]["name"],
-                text=message["text"],
-                username=message["username"],
-                permalink=message["permalink"],
-                timestamp=message["ts"]
-            ) for message in messages
-        ]
+        if "messages" in response.json():
+            messages = response.json()["messages"]["matches"][offset: offset+limit]
+            return [
+                SlackSearchSchema(
+                    channel_name=message["channel"]["name"],
+                    text=message["text"],
+                    username=message["username"],
+                    permalink=message["permalink"],
+                    timestamp=message["ts"]
+                ) for message in messages
+            ]
+        else:
+            return []
+
