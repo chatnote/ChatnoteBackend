@@ -39,6 +39,13 @@ class SlackLoader:
         )
         return response.json()
 
+    def get_team_info(self):
+        response = requests.get(
+            url="https://slack.com/api/team.info",
+            headers=self.headers
+        )
+        return response.json()
+
     def keyword_search(self, keyword: str,  offset: int = 0, limit: int = 10) -> List[SlackSearchSchema]:
         response = requests.get(
             url=f"https://slack.com/api/search.all?query={keyword}&sort=timestamp desc",

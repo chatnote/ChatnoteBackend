@@ -333,11 +333,15 @@ class SlackSyncStatusService:
         try:
             sync_status = self.user.datasyncstatus_set.get(data_source__source=DataSourceEnum.slack)
         except DataSyncStatus.DoesNotExist:
-            account = SlackLoader(self.user).get_account_info()
-            real_name = account["profile"]["real_name"]
+            team_info = SlackLoader(self.user).get_team_info()
+            if "team" in team_info:
+                team_name = team_info["team"]["name"]
+            else:
+                account = SlackLoader(self.user).get_account_info()
+                team_name = account["profile"]["real_name"]
             sync_status = DataSyncStatus.objects.create(
                 user=self.user,
-                account_name=real_name,
+                account_name=team_name,
                 data_source=DataSource.objects.get(source=DataSourceEnum.slack),
                 last_sync_datetime=datetime.now()
             )

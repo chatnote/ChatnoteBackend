@@ -233,7 +233,7 @@ def google_calendar_delete(request):
     description="- scope : channels:history channels:read files:read search:read users.profile:read",
     tags=[ApiTagEnum.source]
 )
-def google_calendar_callback(request, code: str, redirect_url: str):
+def slack_callback(request, code: str, redirect_url: str):
     user = request.user
     code = urllib.parse.unquote(code)
     tokens = SlackLoader(user).get_tokens(code, redirect_url)
@@ -248,7 +248,7 @@ def google_calendar_callback(request, code: str, redirect_url: str):
     path="source/slack/delete/",
     tags=[ApiTagEnum.source]
 )
-def google_calendar_delete(request):
+def slack_delete(request):
     user = request.user
     user.datasyncstatus_set.filter(data_source__source=DataSourceEnum.slack).delete()
     user.slack_access_token = None
