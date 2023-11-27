@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import List
 
 from ninja import Schema
@@ -119,7 +120,7 @@ class DataSourceDTO(Schema):
     @classmethod
     def get_limit_description(cls, data_source):
         if data_source.source == DataSourceEnum.notion:
-            return f"{data_source.limit_count}페이지 연동 가능"
+            return f"{data_source.limit_count}페이지까지 연동 가능"
         else:
             return ""
 
@@ -154,9 +155,9 @@ class MyDataSourceDTO(Schema):
     @classmethod
     def last_sync_date_desc(cls, sync_status):
         if not sync_status.last_sync_datetime:
-            last_sync_date_str = sync_status.modified.date().strftime("%Y.%m.%d")
+            last_sync_date_str = (sync_status.modified + timedelta(hours=9)).date().strftime("%Y.%m.%d")
         else:
-            last_sync_date_str = sync_status.last_sync_datetime.date().strftime("%Y.%m.%d")
+            last_sync_date_str = (sync_status.last_sync_datetime + timedelta(hours=9)).date().strftime("%Y.%m.%d")
         return f"최근연동일자 {last_sync_date_str}"
 
 
