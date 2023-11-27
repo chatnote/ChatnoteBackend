@@ -148,8 +148,8 @@ class MyDataSourceDTO(Schema):
     def cur_status_desc(cls, sync_status):
         data_source = sync_status.data_source
         if data_source.source == DataSourceEnum.notion:
-            cur_page_counts = sync_status.user.notionpage_set.count()
-            return f"연동된 페이지 수: ({cur_page_counts}/{data_source.limit_count})"
+            # cur_page_counts = sync_status.user.notionpage_set.count()
+            return f"연동된 페이지 수: ({sync_status.cur_page_count}/{data_source.limit_count})"
 
     @classmethod
     def last_sync_date_desc(cls, sync_status):
