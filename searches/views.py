@@ -29,19 +29,18 @@ def search(request, keyword: str):
     offset = 0
     limit = 10
 
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        # future1 = executor.submit(NotionLoader(user).keyword_search, keyword, offset, limit)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future1 = executor.submit(NotionLoader(user).keyword_search, keyword, offset, limit)
         # future2 = executor.submit(GoogleGmailLoader(user).keyword_search, keyword, offset, limit)
         # future3 = executor.submit(GoogleDriveLoader(user).keyword_search, keyword, offset, limit)
         # future4 = executor.submit(GoogleCalendarLoader(user).keyword_search, keyword, offset, limit)
         future5 = executor.submit(SlackLoader(user).keyword_search, keyword, offset, limit)
 
-        # notion_search_page_schemas = future1.result()
+        notion_search_page_schemas = future1.result()
         # gmail_message_schemas = future2.result()
         # google_drive_file_schemas = future3.result()
         # google_calendar_event_schemas = future4.result()
 
-        notion_search_page_schemas = []
         gmail_message_schemas = []
         google_drive_file_schemas = []
         google_calendar_event_schemas = []
