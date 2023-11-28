@@ -18,6 +18,7 @@ class DataSource(TimeStampedModel):
     icon = models.CharField(max_length=200, blank=True)
     limit_count = models.IntegerField(null=True, blank=True, default=None)
     is_available = models.BooleanField(default=False)
+    sort_order = models.IntegerField(default=0, null=True)
 
 
 class DataSyncStatus(TimeStampedModel, SoftDeleteModel):

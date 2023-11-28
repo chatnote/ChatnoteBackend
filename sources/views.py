@@ -36,7 +36,7 @@ from sources.tasks import sync_notion_task
 )
 def all_sources(request):
     user = request.user
-    data_source_qs = DataSource.objects.all()
+    data_source_qs = DataSource.objects.all().order_by("sort_order")
     return DataSourceDTO.from_instances(user, data_source_qs)
 
 

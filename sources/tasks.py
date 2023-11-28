@@ -1,4 +1,6 @@
-from typing_extensions import List
+from typing import List
+
+import sentry_sdk
 from zappa.asynchronous import task
 
 from sources.loaders.notion import NotionLoader
@@ -15,5 +17,6 @@ def sync_notion_task(pages: List[dict], user_id: int, total_page_urls: list):
     try:
         notion_sync.overall_process(total_page_urls)
         NotionSyncStatusService(user).save_current_page_count(len(pages))
-    except Exception:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         NotionSyncStatusService(user).save_current_page_count(len(pages))
